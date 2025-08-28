@@ -36,53 +36,83 @@ const userSchema = new Schema(
             type: String
         },
         aadhaarCard: {
-            number: {
+            aadhaar_number: {
                 type: String,
                 trim: true,
                 unique: true,
                 sparse: true // Only enforce uniqueness if field exists
             },
-            name: {
+            full_name: {
                 type: String,
                 trim: true
             },
-            dateOfBirth: {
-                type: Date
+            date_of_birth: {
+                type: String,
+                trim: true
             },
             gender: {
                 type: String,
-                enum: ['Male', 'Female', 'Other']
+                trim: true
             },
             address: {
+                type: String,
+                trim: true
+            },
+            father_name: {
+                type: String,
+                trim: true
+            },
+            phone_number: {
+                type: String,
+                trim: true
+            },
+            email: {
+                type: String,
+                trim: true
+            },
+            pin_code: {
+                type: String,
+                trim: true
+            },
+            state: {
+                type: String,
+                trim: true
+            },
+            district: {
                 type: String,
                 trim: true
             },
             verified: {
                 type: Boolean,
                 default: false
-            },
-            documentUrl: {
-                type: String,
-                default: ""
             }
         },
         panCard: {
-            number: {
+            pan_number: {
                 type: String,
                 trim: true,
                 unique: true,
                 sparse: true // Only enforce uniqueness if field exists
             },
-            name: {
+            full_name: {
                 type: String,
                 trim: true
             },
-            fathersName: {
+            father_name: {
                 type: String,
                 trim: true
             },
-            dateOfBirth: {
-                type: Date
+            date_of_birth: {
+                type: String,
+                trim: true
+            },
+            photo_present: {
+                type: Boolean,
+                default: false
+            },
+            signature_present: {
+                type: Boolean,
+                default: false
             },
             photoUrl: {
                 type: String,
@@ -95,10 +125,6 @@ const userSchema = new Schema(
             verified: {
                 type: Boolean,
                 default: false
-            },
-            documentUrl: {
-                type: String,
-                default: ""
             }
         },
         kycStatus: {
