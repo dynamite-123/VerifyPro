@@ -1,9 +1,15 @@
 import dotenv from "dotenv"
-import connectDB from "./db/dbConnect.js";
-import {app} from './app.js'
+// Load environment variables first, before importing other modules
 dotenv.config({
     path: './.env'
 })
+
+import connectDB from "./db/dbConnect.js";
+import {app} from './app.js'
+
+// Debug environment variables
+console.log("CORS_ORIGIN:", process.env.CORS_ORIGIN)
+console.log("PORT:", process.env.PORT)
 
 connectDB()
 .then(() => {
