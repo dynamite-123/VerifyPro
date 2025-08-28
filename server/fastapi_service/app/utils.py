@@ -1,11 +1,15 @@
 
-from typing import List
+from typing import List, Tuple, Union
 from .schemas import AadhaarExtractedData, PANExtractedData
 from pydantic_ai import Agent, BinaryContent
 from pydantic_ai.models.gemini import GeminiModel
 from pydantic_ai.providers.google_gla import GoogleGLAProvider
 import fitz  # PyMuPDF
 import os
+import cv2
+import numpy as np
+import torch
+from PIL import Image
 
 class APIQuotaExceededException(Exception):
     """Exception raised when API quota is exceeded."""
@@ -106,3 +110,5 @@ class OcrAgent:
                 raise APIQuotaExceededException("API quota exceeded. Please wait a few minutes or upgrade your plan.")
             else:
                 raise e
+
+
