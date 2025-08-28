@@ -4,16 +4,6 @@ import bcrypt from "bcrypt";
 
 const userSchema = new Schema(
     {
-        username: {
-            type: String,
-            required: true,
-            unique: true,
-            lowercase: true,
-            trim: true,
-            index: true,
-            minlength: 3,
-            maxlength: 20
-        },
         email: {
             type: String,
             required: true,
@@ -21,13 +11,19 @@ const userSchema = new Schema(
             lowercase: true,
             trim: true,
         },
-        fullName: {
+        phoneNumber: {
+            type: String,
+            required: true,
+            unique: true,
+            trim: true,
+        },
+        name: {
             type: String,
             required: true,
             trim: true,
             index: true
         },
-        avatar: {
+        photo: {
             type: String,
             default: ""
         },
@@ -39,16 +35,69 @@ const userSchema = new Schema(
         refreshToken: {
             type: String
         },
-        governmentIdType: {
-            type: String,
-            enum: ['Aadhaar', 'PAN', 'Passport', 'DriverLicense', 'Other'],
-            required: true
+        aadhaarCard: {
+            number: {
+                type: String,
+                trim: true,
+                unique: true
+            },
+            name: {
+                type: String,
+                trim: true
+            },
+            dateOfBirth: {
+                type: Date
+            },
+            gender: {
+                type: String,
+                enum: ['Male', 'Female', 'Other']
+            },
+            address: {
+                type: String,
+                trim: true
+            },
+            verified: {
+                type: Boolean,
+                default: false
+            },
+            documentUrl: {
+                type: String,
+                default: ""
+            }
         },
-        governmentIdNumber: {
-            type: String,
-            required: true,
-            trim: true,
-            unique: true
+        panCard: {
+            number: {
+                type: String,
+                trim: true,
+                unique: true
+            },
+            name: {
+                type: String,
+                trim: true
+            },
+            fathersName: {
+                type: String,
+                trim: true
+            },
+            dateOfBirth: {
+                type: Date
+            },
+            photoUrl: {
+                type: String,
+                default: ""
+            },
+            signatureUrl: {
+                type: String,
+                default: ""
+            },
+            verified: {
+                type: Boolean,
+                default: false
+            },
+            documentUrl: {
+                type: String,
+                default: ""
+            }
         },
         kycStatus: {
             type: String,
@@ -56,9 +105,6 @@ const userSchema = new Schema(
             default: 'pending',
             required: true
         },
-        kycDocuments: [{
-            type: String
-        }],
         kycVerifiedAt: {
             type: Date,
             default: null
@@ -66,14 +112,6 @@ const userSchema = new Schema(
         kycRejectedReason: {
             type: String,
             default: ''
-        },
-        country: {
-            type: String,
-            default: "🌍"
-        },
-        lastActive: {
-            type: Date,
-            default: Date.now
         },
         },
         {
@@ -96,8 +134,7 @@ userSchema.methods.generateAccessToken = function(){
         {
             _id: this._id,
             email: this.email,
-            username: this.username,
-            fullName: this.fullName
+            name: this.name
         },
         process.env.ACCESS_TOKEN_SECRET,
         {
