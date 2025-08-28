@@ -36,31 +36,48 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link href="/dashboard">
+              <Link href={isAuthenticated ? "/dashboard" : "/"}>
                 <Logo size="md" />
               </Link>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <Link 
-                href="/dashboard" 
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  pathname === '/dashboard' 
-                    ? 'border-gray-900 text-gray-900' 
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                }`}
-              >
-                Dashboard
-              </Link>
-              <Link 
-                href="/upload" 
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  pathname.startsWith('/upload') 
-                    ? 'border-gray-900 text-gray-900' 
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                }`}
-              >
-                Upload Documents
-              </Link>
+              {isAuthenticated ? (
+                <>
+                  <Link 
+                    href="/dashboard" 
+                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                      pathname === '/dashboard' 
+                        ? 'border-gray-900 text-gray-900' 
+                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    }`}
+                  >
+                    Dashboard
+                  </Link>
+                  <Link 
+                    href="/upload" 
+                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                      pathname.startsWith('/upload') 
+                        ? 'border-gray-900 text-gray-900' 
+                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    }`}
+                  >
+                    Upload Documents
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link 
+                    href="/" 
+                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                      pathname === '/' 
+                        ? 'border-gray-900 text-gray-900' 
+                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    }`}
+                  >
+                    Home
+                  </Link>
+                </>
+              )}
             </div>
           </div>
           
@@ -70,12 +87,12 @@ const Navbar = () => {
               <>
                 {isAuthenticated ? (
                   <div className="flex items-center space-x-4">
-                    <div className="text-sm font-medium text-gray-700">
+                    <div className="text-sm font-medium text-black">
                       Hello, {user?.name?.split(' ')[0] || 'User'}
                     </div>
                     <Button 
                       variant="outline" 
-                      className="text-sm"
+                      className="text-sm text-black"
                       onClick={handleLogout}
                     >
                       Logout
@@ -83,7 +100,7 @@ const Navbar = () => {
                   </div>
                 ) : (
                   <Link href="/auth/login">
-                    <Button variant="primary" className="text-sm">
+                    <Button variant="primary" className="text-sm text-black">
                       Login
                     </Button>
                   </Link>
@@ -120,28 +137,46 @@ const Navbar = () => {
       {isMenuOpen && (
         <div className="sm:hidden">
           <div className="pt-2 pb-3 space-y-1">
-            <Link
-              href="/dashboard"
-              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                pathname === '/dashboard'
-                  ? 'bg-gray-50 border-gray-900 text-gray-900'
-                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-              }`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/upload"
-              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                pathname.startsWith('/upload')
-                  ? 'bg-gray-50 border-gray-900 text-gray-900'
-                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
-              }`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Upload Documents
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                    pathname === '/dashboard'
+                      ? 'bg-gray-50 border-gray-900 text-gray-900'
+                      : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/upload"
+                  className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                    pathname.startsWith('/upload')
+                      ? 'bg-gray-50 border-gray-900 text-gray-900'
+                      : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Upload Documents
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/"
+                  className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                    pathname === '/'
+                      ? 'bg-gray-50 border-gray-900 text-gray-900'
+                      : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Home
+                </Link>
+              </>
+            )}
             
             {/* Only render auth-dependent content after mounting to prevent hydration errors */}
             {isMounted && (

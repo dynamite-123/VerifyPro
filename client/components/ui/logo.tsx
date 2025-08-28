@@ -1,4 +1,16 @@
 import React from 'react';
+import { Montserrat, Poppins } from 'next/font/google';
+
+// Load fonts
+const montserrat = Montserrat({ 
+  subsets: ['latin'],
+  weight: ['700'],
+});
+
+const poppins = Poppins({ 
+  subsets: ['latin'],
+  weight: ['600'],
+});
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -13,9 +25,9 @@ const Logo: React.FC<LogoProps> = ({ size = 'md', className = '' }) => {
   };
 
   return (
-    <div className={`font-normal tracking-wide ${sizeClasses[size]} ${className}`}>
-      <span className="text-gray-900">Verify</span>
-      <span className="text-gray-600 font-light">Pro</span>
+    <div className={`inline-block tracking-wide ${sizeClasses[size]} ${className}`}>
+      <span className={`${montserrat.className} text-gray-900 font-bold align-middle`}>Verify</span>
+      <span className={`${poppins.className} text-gray-600 font-extrabold align-middle`}>Pro</span>
     </div>
   );
 };
