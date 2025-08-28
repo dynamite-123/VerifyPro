@@ -21,28 +21,25 @@ const generateAccessAndRefreshTokens = async (userId) => {
 };
 
 const registerUser = asyncHandler(async (req, res) => {
-    const { fullName, email, username, password, governmentIdType, governmentIdNumber, kycDocuments } = req.body;
+    const { name, email, phoneNumber, password } = req.body;
 
-    if ([fullName, email, username, password, governmentIdType, governmentIdNumber].some((field) => field?.trim() === "")) {
+    if ([name, email, phoneNumber, password].some((field) => field?.trim() === "")) {
         throw new ApiError(400, "All fields are required");
     }
 
     const existedUser = await User.findOne({
-        $or: [{ username }, { email }, { governmentIdNumber }]
+        $or: [{ email }, { phoneNumber }]
     });
 
     if (existedUser) {
-        throw new ApiError(409, "User with email, username, or government ID already exists");
+        throw new ApiError(409, "User with email or phone number already exists");
     }
 
     const user = await User.create({
-        fullName,
+        name,
         email,
-        password,
-        username: username.toLowerCase(),
-        governmentIdType,
-        governmentIdNumber,
-        kycDocuments: kycDocuments || []
+        phoneNumber,
+        password
     });
 
     const createdUser = await User.findById(user._id).select("-password -refreshToken");
@@ -57,14 +54,14 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 const loginUser = asyncHandler(async (req, res) => {
-    const { email, username, password } = req.body;
+    const { email, phoneNumber, password } = req.body;
 
-    if (!username && !email) {
-        throw new ApiError(400, "Username or email is required");
+    if (!phoneNumber && !email) {
+        throw new ApiError(400, "Email or phone number is required");
     }
 
     const user = await User.findOne({
-        $or: [{ username }, { email }]
+        $or: [{ phoneNumber }, { email }]
     });
 
     if (!user) {
@@ -212,9 +209,9 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
-    const { fullName, email, governmentIdType, governmentIdNumber, kycDocuments } = req.body;
+    const { name, email, phoneNumber } = req.body;
 
-    if (!fullName || !email || !governmentIdType || !governmentIdNumber) {
+    if (!name || !email || !phoneNumber) {
         throw new ApiError(400, "All fields are required");
     }
 
@@ -222,11 +219,9 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
         req.user?._id,
         {
             $set: {
-                fullName,
+                name,
                 email,
-                governmentIdType,
-                governmentIdNumber,
-                ...(kycDocuments && { kycDocuments })
+                phoneNumber
             }
         },
         { new: true }
@@ -238,23 +233,23 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
-    const avatarLocalPath = req.file?.path;
+    const photoLocalPath = req.file?.path;
 
-    if (!avatarLocalPath) {
-        throw new ApiError(400, "Avatar file is missing");
+    if (!photoLocalPath) {
+        throw new ApiError(400, "Photo file is missing");
     }
 
-    const avatar = await uploadOnCloudinary(avatarLocalPath);
+    const photo = await uploadOnCloudinary(photoLocalPath);
 
-    if (!avatar.url) {
-        throw new ApiError(400, "Error while uploading on avatar");
+    if (!photo.url) {
+        throw new ApiError(400, "Error while uploading photo");
     }
 
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: {
-                avatar: avatar.url
+                photo: photo.url
             }
         },
         { new: true }
@@ -263,18 +258,18 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     return res
         .status(200)
         .json(
-            new ApiResponse(200, user, "Avatar image updated successfully")
+            new ApiResponse(200, user, "Profile photo updated successfully")
         );
 });
 
 const getUserProfile = asyncHandler(async (req, res) => {
-    const { username } = req.params;
+    const { userId } = req.params;
 
-    if (!username?.trim()) {
-        throw new ApiError(400, "Username is missing");
+    if (!userId?.trim()) {
+        throw new ApiError(400, "User ID is missing");
     }
 
-    const user = await User.findOne({ username }).select("-password -refreshToken");
+    const user = await User.findById(userId).select("-password -refreshToken");
 
     if (!user) {
         throw new ApiError(404, "User does not exist");

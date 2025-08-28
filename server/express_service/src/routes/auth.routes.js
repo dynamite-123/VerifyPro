@@ -23,7 +23,7 @@ router.route("/refresh-token").post(refreshAccessToken);
 router.route("/change-password").post(verifyJWT, changeCurrentPassword);
 router.route("/current-user").get(verifyJWT, getCurrentUser);
 router.route("/update-account").patch(verifyJWT, updateAccountDetails);
-router.route("/avatar").patch(verifyJWT, upload.single("avatar"), updateUserAvatar);
-router.route("/profile/:username").get(getUserProfile);
+router.route("/photo").patch(verifyJWT, upload.single("photo"), updateUserAvatar);
+router.route("/profile/:userId").get(getUserProfile);
 
 export default router;
