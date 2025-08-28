@@ -167,6 +167,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
             name="name"
             type="text"
             required
+            placeholder='Name'
             value={(formData as RegisterFormData).name}
             onChange={handleChange}
             error={errors.name}
@@ -178,6 +179,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
           name="email"
           type="email"
           required
+          placeholder='Email'
           value={formData.email || ''}
           onChange={handleChange}
           error={errors.email}
@@ -189,6 +191,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
             name="phoneNumber"
             type="tel"
             required
+            placeholder='Phone Number'
             value={(formData as RegisterFormData).phoneNumber}
             onChange={handleChange}
             error={errors.phoneNumber}
@@ -200,6 +203,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
             label="Phone Number (alternative to email)"
             name="phoneNumber"
             type="tel"
+            placeholder='Phone Number'
             value={(formData as LoginFormData).phoneNumber || ''}
             onChange={handleChange}
             error={errors.phoneNumber}
@@ -211,6 +215,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
           name="password"
           type="password"
           required
+          placeholder='Password'
           value={formData.password}
           onChange={handleChange}
           error={errors.password}
