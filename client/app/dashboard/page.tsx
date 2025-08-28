@@ -2,24 +2,11 @@
 
 import React from 'react';
 import Link from 'next/link';
-import Logo from '@/components/ui/logo';
 import StatusBadge from '@/components/ui/status-badge';
 
 export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Logo size="md" />
-          <div>
-            <button className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition-all font-light">
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
-      
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-light text-gray-800 mb-6">Welcome to VerifyPro</h1>

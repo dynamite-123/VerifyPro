@@ -51,13 +51,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         
-        const response = await authService.getCurrentUser();
-        if (response.data) {
-          setUser(response.data);
-          setIsAuthenticated(true);
+        try {
+          const response = await authService.getCurrentUser();
+          if (response.data) {
+            console.log('Current user data:', response.data);
+            setUser(response.data);
+            setIsAuthenticated(true);
+          } else {
+            // Clear token if current user endpoint returns no data
+            console.warn("Authentication failed: No user data returned");
+            localStorage.removeItem('accessToken');
+            setIsAuthenticated(false);
+            setUser(null);
+          }
+        } catch (apiError: any) {
+          console.error('Failed to get current user:', apiError?.response?.data?.message || apiError.message);
+          // Clear token if current user endpoint fails
+          localStorage.removeItem('accessToken');
+          setIsAuthenticated(false);
+          setUser(null);
         }
-      } catch (err) {
-        console.error('Authentication check failed:', err);
+      } catch (err: any) {
+        console.error('Authentication check failed:', err?.message);
         // Clear invalid token if authentication fails
         localStorage.removeItem('accessToken');
         setUser(null);
