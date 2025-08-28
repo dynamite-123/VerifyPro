@@ -21,88 +21,117 @@ const generateAccessAndRefreshTokens = async (userId) => {
 };
 
 const registerUser = asyncHandler(async (req, res) => {
-    const { name, email, phoneNumber, password } = req.body;
+    try {
+        console.log("Registration request body:", req.body);
+        const { name, email, phoneNumber, password } = req.body;
 
-    if ([name, email, phoneNumber, password].some((field) => field?.trim() === "")) {
-        throw new ApiError(400, "All fields are required");
+        // Enhanced validation with better error messages
+        if (!name || !name.trim()) {
+            throw new ApiError(400, "Name is required");
+        }
+        
+        if (!email || !email.trim()) {
+            throw new ApiError(400, "Email is required");
+        }
+        
+        if (!phoneNumber || !phoneNumber.trim()) {
+            throw new ApiError(400, "Phone number is required");
+        }
+        
+        if (!password || !password.trim()) {
+            throw new ApiError(400, "Password is required");
+        }
+
+        const existedUser = await User.findOne({
+            $or: [{ email }, { phoneNumber }]
+        });
+
+        if (existedUser) {
+            throw new ApiError(409, "User with email or phone number already exists");
+        }
+
+        const user = await User.create({
+            name,
+            email,
+            phoneNumber,
+            password
+        });
+
+        const createdUser = await User.findById(user._id).select("-password -refreshToken");
+
+        if (!createdUser) {
+            throw new ApiError(500, "Something went wrong while registering the user");
+        }
+        
+        return res.status(201).json(
+            new ApiResponse(200, createdUser, "User registered successfully")
+        );
+    } catch (error) {
+        console.error("Registration error:", error);
+        throw new ApiError(error.statusCode || 500, error.message || "Registration failed");
     }
-
-    const existedUser = await User.findOne({
-        $or: [{ email }, { phoneNumber }]
-    });
-
-    if (existedUser) {
-        throw new ApiError(409, "User with email or phone number already exists");
-    }
-
-    const user = await User.create({
-        name,
-        email,
-        phoneNumber,
-        password
-    });
-
-    const createdUser = await User.findById(user._id).select("-password -refreshToken");
-
-    if (!createdUser) {
-        throw new ApiError(500, "Something went wrong while registering the user");
-    }
-
-    return res.status(201).json(
-        new ApiResponse(200, createdUser, "User registered successfully")
-    );
 });
 
 const loginUser = asyncHandler(async (req, res) => {
-    const { email, phoneNumber, password } = req.body;
+    try {
+        console.log("Login request body:", req.body);
+        const { email, phoneNumber, password } = req.body;
 
-    if (!phoneNumber && !email) {
-        throw new ApiError(400, "Email or phone number is required");
+        if (!phoneNumber && !email) {
+            throw new ApiError(400, "Email or phone number is required");
+        }
+
+        if (!password) {
+            throw new ApiError(400, "Password is required");
+        }
+
+        const user = await User.findOne({
+            $or: [{ phoneNumber }, { email }]
+        });
+
+        if (!user) {
+            throw new ApiError(404, "User does not exist");
+        }
+
+        const isPasswordValid = await user.isPasswordCorrect(password);
+
+        if (!isPasswordValid) {
+            throw new ApiError(401, "Invalid user credentials");
+        }
+
+        const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
+
+        const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
+
+        loggedInUser.isOnline = true;
+        loggedInUser.lastActive = new Date();
+        await loggedInUser.save({ validateBeforeSave: false });
+
+        const options = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax'
+        };
+
+        return res
+            .status(200)
+            .cookie("accessToken", accessToken, options)
+            .cookie("refreshToken", refreshToken, options)
+            .json(
+                new ApiResponse(
+                    200,
+                    {
+                        user: loggedInUser,
+                        accessToken,
+                        refreshToken
+                    },
+                    "User logged in successfully"
+                )
+            );
+    } catch (error) {
+        console.error("Login error:", error);
+        throw new ApiError(error.statusCode || 500, error.message || "Login failed");
     }
-
-    const user = await User.findOne({
-        $or: [{ phoneNumber }, { email }]
-    });
-
-    if (!user) {
-        throw new ApiError(404, "User does not exist");
-    }
-
-    const isPasswordValid = await user.isPasswordCorrect(password);
-
-    if (!isPasswordValid) {
-        throw new ApiError(401, "Invalid user credentials");
-    }
-
-    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
-
-    const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
-
-    loggedInUser.isOnline = true;
-    loggedInUser.lastActive = new Date();
-    await loggedInUser.save({ validateBeforeSave: false });
-
-    const options = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
-    };
-
-    return res
-        .status(200)
-        .cookie("accessToken", accessToken, options)
-        .cookie("refreshToken", refreshToken, options)
-        .json(
-            new ApiResponse(
-                200,
-                {
-                    user: loggedInUser,
-                    accessToken,
-                    refreshToken
-                },
-                "User logged in successfully"
-            )
-        );
 });
 
 const logoutUser = asyncHandler(async (req, res) => {

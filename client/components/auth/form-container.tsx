@@ -19,7 +19,7 @@ const FormContainer: React.FC<FormContainerProps> = ({
           <Logo size="lg" className="mx-auto mb-2" />
           <h2 className="mt-6 text-2xl font-normal text-gray-800 tracking-tight">{title}</h2>
           {subtitle && (
-            <p className="mt-2 text-sm text-gray-500 font-normal">{subtitle}</p>
+            <p className="mt-2 text-sm text font-normal">{subtitle}</p>
           )}
         </div>
         {children}

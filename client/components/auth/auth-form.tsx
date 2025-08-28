@@ -114,7 +114,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
     setIsLoading(true);
     
     try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+      const endpoint = isLogin ? 'http://localhost:8000/api/v1/auth/login' : 'http://localhost:8000/api/v1/auth/register';
       
       const response = await fetch(endpoint, {
         method: 'POST',
