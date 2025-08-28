@@ -18,8 +18,10 @@ app.use(express.static("public"))
 app.use(cookieParser())
 
 import authRouter from './routes/auth.routes.js'
+import uploadRouter from './routes/upload.routes.js'
 
 app.use("/api/v1/auth", authRouter)
+app.use("/api/v1/upload", uploadRouter)
 
 // Global error handler - added for better debugging
 app.use((err, req, res, next) => {
