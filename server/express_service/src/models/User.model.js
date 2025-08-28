@@ -39,7 +39,8 @@ const userSchema = new Schema(
             number: {
                 type: String,
                 trim: true,
-                unique: true
+                unique: true,
+                sparse: true // Only enforce uniqueness if field exists
             },
             name: {
                 type: String,
@@ -69,7 +70,8 @@ const userSchema = new Schema(
             number: {
                 type: String,
                 trim: true,
-                unique: true
+                unique: true,
+                sparse: true // Only enforce uniqueness if field exists
             },
             name: {
                 type: String,
