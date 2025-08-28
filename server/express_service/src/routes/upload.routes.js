@@ -24,7 +24,7 @@ router.post(
 // Route to upload PAN card
 router.post(
     "/pan",
-    upload.single("pan"),
+    upload.single("file"),
     uploadPanCard
 );
 
