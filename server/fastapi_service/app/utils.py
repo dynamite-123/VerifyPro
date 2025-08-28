@@ -17,10 +17,16 @@ class OcrAgent:
         if not api_key:
             raise ValueError("GEMINI_API_KEY environment variable is required")
         
+        # Get region from environment variable, default to us-central1
+        region = os.getenv("GEMINI_REGION", "us-central1")
+        
         self.model = GeminiModel(
             "gemini-2.0-flash-lite",  # Use Gemini 2.0 Flash Lite
             provider=GoogleGLAProvider(api_key=api_key),
         )
+        
+        # Store region for reference (provider doesn't directly support region parameter)
+        self.region = region
 
     def convert_pdf_to_images(self, pdf_bytes: bytes, dpi: int = 150) -> List[bytes]:
         """Convert PDF pages to image bytes."""

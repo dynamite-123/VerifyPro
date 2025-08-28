@@ -11,6 +11,51 @@ async def health_check():
     return {"status": "healthy", "service": "OCR Document Extraction"}
 
 
+@router.get("/test-gemini")
+async def test_gemini_endpoint():
+    """Test endpoint to verify Gemini API integration is working."""
+    try:
+        from ..utils import OcrAgent
+        import os
+        
+        # Get the region being used (note: may not be directly supported by provider)
+        region = os.getenv("GEMINI_REGION", "us-central1")
+        
+        # Initialize OCR agent (which sets up Gemini)
+        ocr_agent = OcrAgent()
+        
+        # Create a simple agent to test text-only queries
+        from pydantic_ai import Agent
+        from pydantic import BaseModel
+        
+        class PlanetResponse(BaseModel):
+            question: str
+            answer: str
+            planet_count: int
+        
+        agent = Agent(
+            model=ocr_agent.model,
+            output_type=PlanetResponse,
+            system_prompt='You are a helpful astronomy assistant. Answer questions about the solar system accurately.'
+        )
+        
+        result = await agent.run('How many planets are there in our solar system? Provide the exact number and a brief explanation.')
+        
+        return {
+            "status": "success",
+            "region_configured": region,
+            "gemini_response": result.output,
+            "message": f"Gemini API is working correctly (region configured: {region}, but may use default routing)",
+            "note": "Region setting may not be directly supported by current pydantic-ai version"
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Gemini API test failed: {str(e)}"
+        )
+
+
 @router.post("/extract-aadhaar", response_model=List[AadhaarExtractedData])
 async def extract_aadhaar_data(files: List[UploadFile] = File(...)):
     """
