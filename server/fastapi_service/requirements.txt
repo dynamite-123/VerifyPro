@@ -5,7 +5,6 @@ pydantic-ai==0.0.12
 python-multipart==0.0.6
 python-dotenv==1.0.0
 PyMuPDF==1.23.26
-argcomplete==3.1.4
 attrs==23.2.0
 Automat==22.10.0
 Babel==2.10.3

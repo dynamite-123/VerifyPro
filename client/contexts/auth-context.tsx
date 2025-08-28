@@ -13,6 +13,29 @@ type User = {
   photo?: string;
   isOnline?: boolean;
   lastActive?: Date;
+  aadhaarCard?: {
+    aadhaar_number: string;
+    full_name: string;
+    date_of_birth: string;
+    gender: string;
+    address: string;
+    father_name?: string;
+    phone_number?: string;
+    email?: string;
+    pin_code?: string;
+    state?: string;
+    district?: string;
+    verified: boolean;
+  };
+  panCard?: {
+    pan_number: string;
+    full_name: string;
+    father_name?: string;
+    date_of_birth: string;
+    photo_present?: boolean;
+    signature_present?: boolean;
+    verified: boolean;
+  };
 } | null;
 
 type AuthContextType = {
@@ -23,6 +46,7 @@ type AuthContextType = {
   register: (userData: { name: string; email: string; phoneNumber: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
   error: string | null;
+  refreshUser: () => Promise<void>;
 };
 
 // Create the context
@@ -142,6 +166,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Refresh user data
+  const refreshUser = async () => {
+    try {
+      setIsLoading(true);
+      const response = await authService.getCurrentUser();
+      if (response.data) {
+        setUser(response.data);
+      }
+    } catch (err: any) {
+      console.error('Failed to refresh user data:', err?.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const value = {
     user,
     isLoading,
@@ -149,7 +188,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     register,
     logout,
-    error
+    error,
+    refreshUser
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

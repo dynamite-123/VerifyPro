@@ -1,45 +1,112 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// This is a placeholder API route that will be connected to your backend controller later
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
+
+// Proxy API route for document uploads
 export async function POST(request: NextRequest) {
   try {
-    // Parse form data
+    // Get the access token from cookies
+    const accessToken = request.cookies.get('accessToken')?.value;
+    
+    if (!accessToken) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
+    // Parse the request
     const formData = await request.formData();
+    const type = formData.get('type') as string;
     
-    // In a real implementation, you would send these files to your backend
-    const aadharCard = formData.get('aadharCard');
-    const panCard = formData.get('panCard');
-    const signature = formData.get('signature');
+    let backendUrl = '';
+    let backendFormData = new FormData();
     
-    // For now, we'll just simulate a successful response
-    return NextResponse.json(
-      { 
-        success: true, 
-        message: 'Documents uploaded successfully',
-        status: {
-          aadhar: 'success',
-          pan: 'success',
-          signature: 'success'
-        }
-      }, 
-      { status: 200 }
-    );
+    // Prepare the form data based on document type
+    if (type === 'aadhaar') {
+      backendUrl = `${API_URL}/upload/aadhaar`;
+      
+      const front = formData.get('front') as File;
+      const back = formData.get('back') as File;
+      
+      if (!front || !back) {
+        return NextResponse.json(
+          { success: false, message: 'Both front and back images are required' },
+          { status: 400 }
+        );
+      }
+      
+      backendFormData.append('front', front);
+      backendFormData.append('back', back);
+    } 
+    else if (type === 'pan') {
+      backendUrl = `${API_URL}/upload/pan`;
+      
+      const file = formData.get('file') as File;
+      
+      if (!file) {
+        return NextResponse.json(
+          { success: false, message: 'PAN card image is required' },
+          { status: 400 }
+        );
+      }
+      
+      backendFormData.append('file', file);
+    }
+    else {
+      return NextResponse.json(
+        { success: false, message: 'Invalid document type' },
+        { status: 400 }
+      );
+    }
     
-    // When you implement the backend controller, you'll make a fetch request to it
-    /*
-    const backendResponse = await fetch('http://localhost:8000/api/upload-documents', {
+    // Send the request to the backend
+    const backendResponse = await fetch(backendUrl, {
       method: 'POST',
-      body: formData
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: backendFormData
     });
     
-    const data = await backendResponse.json();
-    return NextResponse.json(data, { status: backendResponse.status });
-    */
+    // Parse the response
+    let responseData;
+    try {
+      responseData = await backendResponse.json();
+    } catch (error) {
+      // Handle JSON parsing errors
+      return NextResponse.json({
+        success: false,
+        message: 'Invalid response from server'
+      }, { status: 500 });
+    }
     
-  } catch (error) {
+    // Format the response to match our expected structure
+    return NextResponse.json({
+      success: backendResponse.ok,
+      message: responseData.message || (backendResponse.ok ? 'Upload successful' : 'Upload failed'),
+      data: responseData.data
+    }, { 
+      status: backendResponse.status 
+    });
+    
+  } catch (error: any) {
     console.error('Error uploading documents:', error);
+    
+    // Provide a more helpful error message
+    let errorMessage = 'Failed to upload documents';
+    
+    if (error.message.includes('ECONNREFUSED') || error.message.includes('fetch failed')) {
+      errorMessage = 'Could not connect to the server. Please check your connection or try again later.';
+    } else if (error.message.includes('timeout')) {
+      errorMessage = 'Server took too long to respond. Please try again.';
+    }
+    
     return NextResponse.json(
-      { success: false, error: 'Failed to upload documents' },
+      { 
+        success: false, 
+        message: errorMessage 
+      },
       { status: 500 }
     );
   }
