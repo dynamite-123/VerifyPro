@@ -1,35 +1,57 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import UploadContainer from '@/components/upload/upload-container';
 import FileUpload from '@/components/upload/file-upload';
 import StatusBadge from '@/components/ui/status-badge';
+import { uploadService } from '@/services/upload';
+import { useAuth } from '@/contexts/auth-context';
 
 interface UploadFormData {
-  aadharCard: File | null;
+  aadhaarFront: File | null;
+  aadhaarBack: File | null;
   panCard: File | null;
 }
 
-// Placeholder for verification status
+// Verification status for each document
 interface VerificationStatus {
-  aadhar: 'pending' | 'success' | 'error' | 'warning' | null;
+  aadhaar: 'pending' | 'success' | 'error' | 'warning' | null;
   pan: 'pending' | 'success' | 'error' | 'warning' | null;
 }
 
 export default function UploadPage() {
   const router = useRouter();
+  const { user, refreshUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [formData, setFormData] = useState<UploadFormData>({
-    aadharCard: null,
+    aadhaarFront: null,
+    aadhaarBack: null,
     panCard: null
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>({
-    aadhar: null,
+    aadhaar: null,
     pan: null
   });
+  
+  // Check existing verification status on mount
+  useEffect(() => {
+    if (user?.aadhaarCard?.aadhaar_number) {
+      setVerificationStatus(prev => ({
+        ...prev,
+        aadhaar: user?.aadhaarCard?.verified ? 'success' : 'pending'
+      }));
+    }
+    
+    if (user?.panCard?.pan_number) {
+      setVerificationStatus(prev => ({
+        ...prev,
+        pan: user?.panCard?.verified ? 'success' : 'pending'
+      }));
+    }
+  }, [user]);
   
   const handleFileUpload = (field: keyof UploadFormData) => (file: File) => {
     setFormData(prev => ({
@@ -49,8 +71,12 @@ export default function UploadPage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.aadharCard) {
-      newErrors.aadharCard = 'Please upload your Aadhar Card';
+    if (!formData.aadhaarFront) {
+      newErrors.aadhaarFront = 'Please upload your Aadhaar Card (front side)';
+    }
+    
+    if (!formData.aadhaarBack) {
+      newErrors.aadhaarBack = 'Please upload your Aadhaar Card (back side)';
     }
     
     if (!formData.panCard) {
@@ -72,55 +98,74 @@ export default function UploadPage() {
     setIsVerifying(true);
     
     try {
-      // Simulate verification process
+      // Clear any previous errors
+      setErrors({});
+      
+      // Initialize verification status
       setVerificationStatus({
-        aadhar: 'pending',
+        aadhaar: 'pending',
         pan: 'pending'
       });
       
-      // Simulate API request timing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Update status one by one with delays to simulate real verification
-      setVerificationStatus(prev => ({
-        ...prev,
-        aadhar: 'success'
-      }));
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setVerificationStatus(prev => ({
-        ...prev,
-        pan: 'success'
-      }));
-      
-      // In a real application, you would submit the files to your backend here
-      /* 
-      const formDataToSend = new FormData();
-      if (formData.aadharCard) formDataToSend.append('aadharCard', formData.aadharCard);
-      if (formData.panCard) formDataToSend.append('panCard', formData.panCard);
-      
-      const response = await fetch('/api/upload-documents', {
-        method: 'POST',
-        body: formDataToSend
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        // Handle success
-      } else {
-        // Handle error
-        setErrors({ form: data.error || 'An error occurred during submission' });
+      // Upload Aadhaar card (front and back)
+      if (formData.aadhaarFront && formData.aadhaarBack) {
+        const aadhaarResponse = await uploadService.uploadAadhaarCard(
+          formData.aadhaarFront,
+          formData.aadhaarBack
+        );
+        
+        if (aadhaarResponse.success) {
+          setVerificationStatus(prev => ({
+            ...prev,
+            aadhaar: 'success'
+          }));
+          
+          // Update user data in context
+          await refreshUser();
+        } else {
+          console.error('Aadhaar upload error:', aadhaarResponse.message);
+          setVerificationStatus(prev => ({
+            ...prev,
+            aadhaar: 'error'
+          }));
+          setErrors(prev => ({
+            ...prev,
+            aadhaarFront: aadhaarResponse.message || 'Failed to process Aadhaar card'
+          }));
+        }
       }
-      */
+      
+      // Upload PAN card
+      if (formData.panCard) {
+        const panResponse = await uploadService.uploadPanCard(formData.panCard);
+        
+        if (panResponse.success) {
+          setVerificationStatus(prev => ({
+            ...prev,
+            pan: 'success'
+          }));
+          
+          // Update user data in context
+          await refreshUser();
+        } else {
+          console.error('PAN upload error:', panResponse.message);
+          setVerificationStatus(prev => ({
+            ...prev,
+            pan: 'error'
+          }));
+          setErrors(prev => ({
+            ...prev,
+            panCard: panResponse.message || 'Failed to process PAN card'
+          }));
+        }
+      }
       
     } catch (error) {
       setErrors({ form: 'An unexpected error occurred. Please try again.' });
       
       // Reset verification status on error
       setVerificationStatus({
-        aadhar: 'error',
+        aadhaar: 'error',
         pan: 'error'
       });
     } finally {
@@ -139,14 +184,14 @@ export default function UploadPage() {
 
   const isAllVerified = () => {
     return (
-      verificationStatus.aadhar === 'success' && 
+      verificationStatus.aadhaar === 'success' && 
       verificationStatus.pan === 'success'
     );
   };
 
   const hasVerificationErrors = () => {
     return (
-      verificationStatus.aadhar === 'error' || 
+      verificationStatus.aadhaar === 'error' || 
       verificationStatus.pan === 'error'
     );
   };
@@ -163,26 +208,43 @@ export default function UploadPage() {
       )}
       
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Aadhar Card Section */}
+        {/* Aadhaar Card Front Section */}
         <div className="p-6 bg-white border border-gray-100 rounded-xl shadow-sm">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-700">Aadhar Card</h3>
-            {verificationStatus.aadhar && (
+            <h3 className="text-lg font-medium text-gray-700">Aadhaar Card (Front)</h3>
+            {verificationStatus.aadhaar && (
               <StatusBadge 
-                status={verificationStatus.aadhar} 
-                text={getStatusText(verificationStatus.aadhar)} 
+                status={verificationStatus.aadhaar} 
+                text={getStatusText(verificationStatus.aadhaar)} 
               />
             )}
           </div>
           <p className="text-sm text-gray-500 mb-4">
-            Please upload a clear, high-resolution image of your Aadhar Card. Make sure all details are visible.
+            Please upload a clear, high-resolution image of the front side of your Aadhaar Card.
           </p>
           <FileUpload
-            title="Aadhar Card"
+            title="Aadhaar Card Front"
             subtitle="JPG, PNG or PDF up to 5MB"
             acceptedFileTypes=".jpg,.jpeg,.png,.pdf"
-            onFileSelected={handleFileUpload('aadharCard')}
-            error={errors.aadharCard}
+            onFileSelected={handleFileUpload('aadhaarFront')}
+            error={errors.aadhaarFront}
+          />
+        </div>
+
+        {/* Aadhaar Card Back Section */}
+        <div className="p-6 bg-white border border-gray-100 rounded-xl shadow-sm">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-medium text-gray-700">Aadhaar Card (Back)</h3>
+          </div>
+          <p className="text-sm text-gray-500 mb-4">
+            Please upload a clear, high-resolution image of the back side of your Aadhaar Card.
+          </p>
+          <FileUpload
+            title="Aadhaar Card Back"
+            subtitle="JPG, PNG or PDF up to 5MB"
+            acceptedFileTypes=".jpg,.jpeg,.png,.pdf"
+            onFileSelected={handleFileUpload('aadhaarBack')}
+            error={errors.aadhaarBack}
           />
         </div>
         
