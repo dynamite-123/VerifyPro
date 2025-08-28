@@ -3,6 +3,7 @@ import { Public_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 import Navbar from "@/components/ui/navbar";
+import Footer from "@/components/ui/footer";
 
 const publicSans = Public_Sans({
   variable: "--font-public-sans",
@@ -30,6 +31,7 @@ export default function RootLayout({
           <main className="min-h-screen">
             {children}
           </main>
+          <Footer />
         </AuthProvider>
       </body>
     </html>

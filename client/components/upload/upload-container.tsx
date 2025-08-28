@@ -17,7 +17,7 @@ const UploadContainer: React.FC<UploadContainerProps> = ({
       <div className="max-w-2xl w-full space-y-8 bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
         <div className="text-center">
           <Logo size="lg" className="mx-auto mb-2" />
-          <h2 className="mt-6 text-2xl font-normal text-gray-800 tracking-tight">{title}</h2>
+          <h2 className="mt-2 text-2xl font-normal text-gray-800 tracking-tight">{title}</h2>
           {subtitle && (
             <p className="mt-2 text-sm text-gray-500 font-normal">{subtitle}</p>
           )}
