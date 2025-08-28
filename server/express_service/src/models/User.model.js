@@ -113,6 +113,10 @@ const userSchema = new Schema(
             type: String,
             default: ''
         },
+        otpPicture: {
+            type: String,
+            default: ""
+        },
         },
         {
             timestamps: true
