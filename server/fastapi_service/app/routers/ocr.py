@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Query
 from typing import List
-from ..utils import OcrAgent
+from ..utils import OcrAgent, APIQuotaExceededException
 from ..schemas import AadhaarExtractedData, PANExtractedData
 
 router = APIRouter(prefix="/ocr", tags=["OCR"])
@@ -77,6 +77,8 @@ async def extract_aadhaar_data(files: List[UploadFile] = File(...)):
         extracted_data = await ocr_agent.extract_aadhaar_data(all_images)
         return extracted_data
     
+    except APIQuotaExceededException as e:
+        raise HTTPException(status_code=429, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing Aadhaar documents: {str(e)}")
 
@@ -145,5 +147,7 @@ async def extract_pan_data(files: List[UploadFile] = File(...)):
         extracted_data = await ocr_agent.extract_pan_data(all_images)
         return extracted_data
     
+    except APIQuotaExceededException as e:
+        raise HTTPException(status_code=429, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing PAN documents: {str(e)}")
