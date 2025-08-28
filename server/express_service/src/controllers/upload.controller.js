@@ -6,21 +6,14 @@ import { User } from "../models/User.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { removeTemporaryFiles } from "../middlewares/upload.middleware.js";
 
-// OCR service base URL
-const OCR_SERVICE_BASE_URL = "http://127.0.0.1:8000";
 
-/**
- * Upload Aadhaar card front and back images, extract data, and update user profile
- */
 export const uploadAadhaarCard = asyncHandler(async (req, res) => {
     const userId = req.user?._id;
     if (!userId) {
         throw new ApiError(401, "Unauthorized request");
     }
 
-    // Check if both front and back images are uploaded
     if (!req.files || !req.files.front || !req.files.back) {
         throw new ApiError(400, "Both front and back images of Aadhaar card are required");
     }
@@ -33,19 +26,15 @@ export const uploadAadhaarCard = asyncHandler(async (req, res) => {
     }
 
     try {
-        // Create form data for OCR API
         const formData = new FormData();
         
-        // Read files as buffers to ensure complete data
         const frontImageBuffer = fs.readFileSync(frontImageLocalPath);
         const backImageBuffer = fs.readFileSync(backImageLocalPath);
         
-        // Check if files have valid content
         if (!frontImageBuffer.length || !backImageBuffer.length) {
             throw new ApiError(400, "Invalid or empty image files");
         }
         
-        // Append files to form data with proper mime types
         formData.append('files', frontImageBuffer, {
             filename: path.basename(frontImageLocalPath),
             contentType: req.files.front[0].mimetype,
@@ -58,12 +47,11 @@ export const uploadAadhaarCard = asyncHandler(async (req, res) => {
             knownLength: backImageBuffer.length
         });
 
-        // Call OCR API to extract Aadhaar card data
         console.log("Sending Aadhaar images to OCR service...");
         let ocrResponse;
         try {
             ocrResponse = await axios.post(
-                `${OCR_SERVICE_BASE_URL}/ocr/extract-aadhaar/`,
+                `${process.env.OCR_SERVICE_BASE_URL}/ocr/extract-aadhaar/`,
                 formData,
                 {
                     headers: {
@@ -87,19 +75,14 @@ export const uploadAadhaarCard = asyncHandler(async (req, res) => {
             );
         }
 
-        // Get extracted Aadhaar data
         const extractedData = ocrResponse.data;
         
         if (!extractedData || extractedData.length === 0) {
             throw new ApiError(400, "Could not extract data from Aadhaar card images");
         }
 
-        // Get the first extracted data object
         const aadhaarData = extractedData[0];
 
-        // We're keeping the files but not storing their URLs in the model
-
-        // Update user with Aadhaar card data
         const user = await User.findByIdAndUpdate(
             userId,
             {
@@ -123,7 +106,6 @@ export const uploadAadhaarCard = asyncHandler(async (req, res) => {
             throw new ApiError(500, "Error updating user with Aadhaar card data");
         }
 
-        // Return success response
         return res.status(200).json(
             new ApiResponse(
                 200,
@@ -132,24 +114,18 @@ export const uploadAadhaarCard = asyncHandler(async (req, res) => {
             )
         );
     } catch (error) {
-        // Handle OCR API errors
         const errorMsg = error.response?.data?.detail || error.message || "Error processing Aadhaar card";
         throw new ApiError(error.response?.status || 500, errorMsg);
     } finally {
-        // Keep the files for serving
     }
 });
 
-/**
- * Upload PAN card image, extract data, and update user profile
- */
 export const uploadPanCard = asyncHandler(async (req, res) => {
     const userId = req.user?._id;
     if (!userId) {
         throw new ApiError(401, "Unauthorized request");
     }
 
-    // Check if PAN card image is uploaded
     if (!req.file) {
         throw new ApiError(400, "PAN card image is required");
     }
@@ -160,30 +136,25 @@ export const uploadPanCard = asyncHandler(async (req, res) => {
     }
 
     try {
-        // Create form data for OCR API
         const formData = new FormData();
         
-        // Read file as buffer to ensure complete data
         const panCardBuffer = fs.readFileSync(panCardImageLocalPath);
         
-        // Check if file has valid content
         if (!panCardBuffer.length) {
             throw new ApiError(400, "Invalid or empty PAN card image");
         }
         
-        // Append file to form data with proper mime type
         formData.append('files', panCardBuffer, {
             filename: path.basename(panCardImageLocalPath),
             contentType: req.file.mimetype,
             knownLength: panCardBuffer.length
         });
 
-        // Call OCR API to extract PAN card data
         console.log("Sending PAN card image to OCR service...");
         let ocrResponse;
         try {
             ocrResponse = await axios.post(
-                `${OCR_SERVICE_BASE_URL}/ocr/extract-pan/`,
+                `${process.env.OCR_SERVICE_BASE_URL}/ocr/extract-pan/`,
                 formData,
                 {
                     headers: {
@@ -207,19 +178,14 @@ export const uploadPanCard = asyncHandler(async (req, res) => {
             );
         }
 
-        // Get extracted PAN data
         const extractedData = ocrResponse.data;
         
         if (!extractedData || extractedData.length === 0) {
             throw new ApiError(400, "Could not extract data from PAN card image");
         }
 
-        // Get the first extracted data object
         const panData = extractedData[0];
 
-        // We're keeping the file but not storing its URL in the model
-
-        // Update user with PAN card data
         const user = await User.findByIdAndUpdate(
             userId,
             {
@@ -238,7 +204,6 @@ export const uploadPanCard = asyncHandler(async (req, res) => {
             throw new ApiError(500, "Error updating user with PAN card data");
         }
 
-        // Return success response
         return res.status(200).json(
             new ApiResponse(
                 200,
@@ -247,10 +212,8 @@ export const uploadPanCard = asyncHandler(async (req, res) => {
             )
         );
     } catch (error) {
-        // Handle OCR API errors
         const errorMsg = error.response?.data?.detail || error.message || "Error processing PAN card";
         throw new ApiError(error.response?.status || 500, errorMsg);
     } finally {
-        // Keep the file for serving
     }
 });
