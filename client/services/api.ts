@@ -67,11 +67,19 @@ api.interceptors.response.use(
       
       try {
         // Try to refresh the token
-        await authService.refreshToken();
+        const refreshResponse = await authService.refreshToken();
+        // If refresh successful, update token
+        if (refreshResponse.data && refreshResponse.data.accessToken) {
+          localStorage.setItem('accessToken', refreshResponse.data.accessToken);
+        }
         // Retry the original request
         return api(originalRequest);
       } catch (refreshError) {
-        // If refresh fails, redirect to login or dispatch logout
+        // If refresh fails, clear token and redirect to login
+        localStorage.removeItem('accessToken');
+        if (typeof window !== 'undefined') {
+          window.location.href = '/auth/login';
+        }
         return Promise.reject(refreshError);
       }
     }

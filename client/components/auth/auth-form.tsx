@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import FormContainer from './form-container';
 import Input from '../ui/input';
 import Button from '../ui/button';
+import { useAuth } from '@/contexts/auth-context';
 
 // Types based on backend requirements
 interface LoginFormData {
@@ -27,7 +28,15 @@ interface AuthFormProps {
 
 const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
   const router = useRouter();
+  const { login, register, isAuthenticated, error: authError } = useAuth();
   const isLogin = mode === 'login';
+  
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, router]);
   
   // Initialize form state based on mode
   const [formData, setFormData] = useState<LoginFormData | RegisterFormData>(
@@ -44,6 +53,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
   // Remove government ID options as they're no longer needed
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // Update form errors when auth error changes
+  useEffect(() => {
+    if (authError) {
+      setErrors(prev => ({ ...prev, form: authError }));
+    }
+  }, [authError]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -114,35 +130,17 @@ const AuthForm: React.FC<AuthFormProps> = ({ mode }) => {
     setIsLoading(true);
     
     try {
-      const endpoint = isLogin ? 'http://localhost:8000/api/v1/auth/login' : 'http://localhost:8000/api/v1/auth/register';
-      
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        // Successful login/register
-        if (isLogin) {
-          // Redirect to dashboard or home page after login
-          router.push('/dashboard');
-        } else {
-          // Redirect to login page after registration
-          router.push('/auth/login');
-        }
+      if (isLogin) {
+        // Use auth context login function
+        await login(formData as LoginFormData);
+        // No need to redirect here as useEffect with isAuthenticated will handle it
       } else {
-        // Handle API errors
-        if (data.error) {
-          setErrors({ form: data.error });
-        }
+        // Use auth context register function
+        await register(formData as RegisterFormData);
+        // Redirect handled by register function in auth context
       }
-    } catch (error) {
-      setErrors({ form: 'An unexpected error occurred. Please try again.' });
+    } catch (error: any) {
+      setErrors({ form: error?.message || 'An unexpected error occurred. Please try again.' });
     } finally {
       setIsLoading(false);
     }
