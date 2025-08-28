@@ -7,6 +7,10 @@ from pydantic_ai.providers.google_gla import GoogleGLAProvider
 import fitz  # PyMuPDF
 import os
 
+class APIQuotaExceededException(Exception):
+    """Exception raised when API quota is exceeded."""
+    pass
+
 class OcrAgent:
     def __init__(self):
         api_key = os.getenv("GEMINI_API_KEY")
@@ -14,7 +18,7 @@ class OcrAgent:
             raise ValueError("GEMINI_API_KEY environment variable is required")
         
         self.model = GeminiModel(
-            "gemini-1.5-flash",  # Use 1.5-flash instead of 2.0-flash (better free tier)
+            "gemini-2.0-flash-lite",  # Use Gemini 2.0 Flash Lite
             provider=GoogleGLAProvider(api_key=api_key),
         )
 
@@ -63,7 +67,7 @@ class OcrAgent:
             return result.output
         except Exception as e:
             if "429" in str(e) or "RATE_LIMIT_EXCEEDED" in str(e):
-                raise Exception("API quota exceeded. Please wait a few minutes or upgrade your plan.")
+                raise APIQuotaExceededException("API quota exceeded. Please wait a few minutes or upgrade your plan.")
             else:
                 raise e
 
@@ -93,6 +97,6 @@ class OcrAgent:
             return result.output
         except Exception as e:
             if "429" in str(e) or "RATE_LIMIT_EXCEEDED" in str(e):
-                raise Exception("API quota exceeded. Please wait a few minutes or upgrade your plan.")
+                raise APIQuotaExceededException("API quota exceeded. Please wait a few minutes or upgrade your plan.")
             else:
                 raise e
