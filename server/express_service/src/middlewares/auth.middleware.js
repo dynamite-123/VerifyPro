@@ -3,9 +3,18 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken";
 import { User } from "../models/User.model.js";
 
-export const verifyJWT = asyncHandler(async (req, _, next) => {
+export const verifyJWT = asyncHandler(async (req, res, next) => {
+    // Handle OPTIONS preflight requests
+    if (req.method === 'OPTIONS') {
+        return next();
+    }
+    
     try {
-        const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
+        // Check for token in cookies or Authorization header
+        const token = 
+            req.cookies?.accessToken || 
+            req.header("Authorization")?.replace("Bearer ", "") ||
+            null;
         
         if (!token) {
             throw new ApiError(401, "Unauthorized request");
