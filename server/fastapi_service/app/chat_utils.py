@@ -55,8 +55,13 @@ Question: {query}
 Please provide a detailed answer that thoroughly addresses the question using the information from the context above:"""
     return prompt
 
-def generate_answer(prompt: str, ibm_model) -> str:
+def generate_answer(prompt: str, ibm_model, max_tokens: int = 128) -> str:
     response = ibm_model.generate(
         prompt=prompt,
+        params={
+            "max_new_tokens": max_tokens,
+            "temperature": 0.7,
+            "top_p": 0.9
+        }
     )
     return response['results'][0]['generated_text']

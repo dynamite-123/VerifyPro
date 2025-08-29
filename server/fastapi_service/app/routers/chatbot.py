@@ -34,7 +34,10 @@ ibm_credentials = Credentials(
 	api_key=IBM_API_KEY
 )
 ibm_model = ModelInference(
-	model_id="ibm/granite-13b-instruct-v2",
+	# model_id="ibm/granite-13b-instruct-v2",
+	model_id="meta-llama/llama-2-13b-chat",
+	# model_id="mistralai/mistral-small-3-1-24b-instruct-2503",
+
 	credentials=ibm_credentials,
 	project_id=IBM_PROJECT_ID
 )
@@ -47,7 +50,7 @@ async def chat_rag(request: ChatRequest):
 		if not contexts:
 			raise HTTPException(status_code=404, detail="No relevant context found.")
 		prompt = build_prompt(request.query, contexts)
-		answer = generate_answer(prompt, ibm_model)
+		answer = generate_answer(prompt, ibm_model, max_tokens=512)
 		return ChatResponse(answer=answer, context=[c.get('content', '') for c in contexts])
 	except Exception as e:
 		raise HTTPException(status_code=500, detail=str(e))
