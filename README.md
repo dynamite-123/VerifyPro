@@ -1,5 +1,5 @@
-# 🔐 SentinelKYC  
-**Automated KYC Verification using LangChain, RAG, Express.js, FastAPI, and Next.js**
+# VerifyPro
+**Multi-level KYC Verification with RAG-Supported Chatbot and KYC Sharing**
 
 ![Node.js](https://img.shields.io/badge/node-%23339933.svg?style=for-the-badge&logo=node.js&logoColor=white)
 ![Next.js](https://img.shields.io/badge/next.js-black?style=for-the-badge&logo=next.js&logoColor=white)
@@ -9,25 +9,39 @@
 
 ---
 
-## 📌 Problem
-KYC (Know Your Customer) onboarding is slow and manual:
-- Teams spend hours reviewing PDFs, IDs, financials.  
-- Analysts must cross-check sanctions and PEP lists.  
-- Errors lead to compliance risk and customer drop-offs.  
+## Problem Statement
+Traditional KYC processes are slow, manual, and prone to errors:
+- Compliance teams spend hours manually reviewing documents and verifying customer information
+- Limited ability to share verified KYC data across institutions  
+- No centralized system for sanctions screening and risk assessment
+- Customers face repeated verification processes across different platforms
 
 ---
 
-## 💡 Solution
-**SentinelKYC** automates the **end-to-end KYC process**:
-- Upload documents & links via a clean **Next.js portal**.  
-- **OCR + LangChain** extract structured data from unstructured sources.  
-- **Express.js Rules Engine** validates documents, expiry dates, and IDs.  
-- **RAG-powered Sanctions & Media Screening** finds risks with explainable evidence.  
-- Final output: **PASS / REVIEW / REJECT** with a decision report.  
+## Solution
+VerifyPro automates and streamlines the KYC verification process through:
+
+**Multi-level KYC Verification**
+- Automated document processing and validation
+- OCR and intelligent data extraction
+- Rule-based verification engine
+- Risk assessment and scoring
+
+**RAG-Supported Chatbot**
+- Interactive compliance assistance
+- Real-time query resolution
+- Document-based question answering
+- Regulatory guidance and support
+
+**KYC Sharing**
+- Secure inter-institutional data sharing
+- Standardized verification records
+- Reduced redundant verification processes
+- Compliance with data protection regulations
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 ```
 Customer → Next.js Frontend → Express Orchestrator → Microservices
     ├── Document Service (FastAPI, OCR)
@@ -39,7 +53,7 @@ Customer → Next.js Frontend → Express Orchestrator → Microservices
 
 ---
 
-## 🔄 Workflow
+## Workflow
 1. **Upload** → Customer submits PDFs, images, or links.  
 2. **OCR & Extraction** → FastAPI + LangChain parse documents into JSON.  
 3. **Validation** → Express rules check expiry dates, ID formats, ownership chains.  
@@ -48,22 +62,22 @@ Customer → Next.js Frontend → Express Orchestrator → Microservices
 
 ---
 
-## ✨ Features
-- 📂 Upload multiple KYC documents in seconds  
-- 🧠 AI-powered entity extraction (LangChain)  
-- 🔎 Sanctions & PEP search via RAG + vector DB  
-- 📊 Automated decision packs (Pass/Review/Reject)  
-- 🖥️ Web UI for customers and compliance teams  
-- 🐳 Fully containerized with Docker  
+## Features
+- Upload multiple KYC documents in seconds  
+- AI-powered entity extraction (LangChain)  
+- Sanctions & PEP search via RAG + vector DB  
+- Automated decision packs (Pass/Review/Reject)  
+- Web UI for customers and compliance teams  
+- Fully containerized with Docker  
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
 ```bash
 # Clone repo
-git clone https://github.com/your-org/sentinel-kyc.git
-cd sentinel-kyc
+git clone https://github.com/your-org/verifypro.git
+cd verifypro
 
 # Start all services
 docker-compose up --build
@@ -82,7 +96,7 @@ Frontend available at: `http://localhost:3000`
 
 ---
 
-## 📊 Before vs After
+## Before vs After
 
 | Step              | Manual KYC | Automated KYC |
 |-------------------|------------|---------------|
