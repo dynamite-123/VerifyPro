@@ -44,7 +44,10 @@ const userSchema = new Schema(
                 type: String,
                 trim: true,
                 unique: true,
-                sparse: true // Only enforce uniqueness if field exists
+                sparse: true, // Only enforce uniqueness if field exists
+                default: undefined,
+                // ensure null/empty values are not stored (so sparse index ignores them)
+                set: v => (v === null || v === '' ? undefined : v)
             },
             full_name: {
                 type: String,
@@ -96,7 +99,10 @@ const userSchema = new Schema(
                 type: String,
                 trim: true,
                 unique: true,
-                sparse: true // Only enforce uniqueness if field exists
+                sparse: true, // Only enforce uniqueness if field exists
+                default: undefined,
+                // ensure null/empty values are not stored (so sparse index ignores them)
+                set: v => (v === null || v === '' ? undefined : v)
             },
             full_name: {
                 type: String,

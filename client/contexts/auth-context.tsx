@@ -77,9 +77,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         try {
           const response = await authService.getCurrentUser();
-          if (response.data) {
-            console.log('Current user data:', response.data);
-            setUser(response.data);
+          // Support both shapes: (1) authService returning full axios response => response.data is ApiResponse
+          // and (2) authService returning already-unwrapped ApiResponse => response is ApiResponse-like.
+          const payload = response?.data?.data ?? response?.data ?? response ?? null;
+
+          if (payload) {
+            // payload may be the user object or an object containing { user, accessToken }
+            const userObj = (payload && (payload.user ?? payload)) || null;
+            console.log('Current user data:', userObj);
+            setUser(userObj);
             setIsAuthenticated(true);
           } else {
             // Clear token if current user endpoint returns no data
@@ -115,12 +121,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       setError(null);
       const response = await authService.login(credentials);
-      setUser(response.data.user);
+      const payload = response?.data?.data ?? response?.data ?? response ?? null;
+      const userObj = payload?.user ?? payload;
+      setUser(userObj);
       setIsAuthenticated(true);
-      
+
       // Store tokens in localStorage as a fallback for the Authorization header
-      if (response.data.accessToken) {
-        localStorage.setItem('accessToken', response.data.accessToken);
+      const accessToken = payload?.accessToken ?? response?.data?.accessToken ?? null;
+      if (accessToken) {
+        localStorage.setItem('accessToken', accessToken);
       }
       
       router.push('/dashboard'); // Redirect to dashboard after login
@@ -171,9 +180,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       const response = await authService.getCurrentUser();
-      if (response.data) {
-        setUser(response.data);
-      }
+      const payload = response?.data?.data ?? response?.data ?? response ?? null;
+      const userObj = payload?.user ?? payload ?? null;
+      if (userObj) setUser(userObj);
     } catch (err: any) {
       console.error('Failed to refresh user data:', err?.message);
     } finally {
