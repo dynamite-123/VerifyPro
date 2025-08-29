@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import ocr, signature, otp
+from app.routers import ocr, signature, otp, chatbot
 
 app = FastAPI(
     title="Document OCR & Signature Verification API",
@@ -10,3 +10,4 @@ app = FastAPI(
 app.include_router(ocr.router)
 app.include_router(signature.router)
 app.include_router(otp.router)
+app.include_router(chatbot.router)

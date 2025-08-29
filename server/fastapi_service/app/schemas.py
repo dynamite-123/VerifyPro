@@ -1,5 +1,17 @@
-from pydantic import BaseModel
-from typing import Optional
+
+from pydantic import BaseModel, EmailStr
+from typing import List, Optional
+
+class OTPRequest(BaseModel):
+    email: EmailStr
+
+class ChatRequest(BaseModel):
+    query: str
+    top_k: Optional[int] = 3
+
+class ChatResponse(BaseModel):
+    answer: str
+    context: List[str]
 
 class AadhaarExtractedData(BaseModel):
     aadhaar_number: Optional[str] = None  # 12-digit Aadhaar number
