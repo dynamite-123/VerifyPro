@@ -8,7 +8,8 @@ export async function POST(request: NextRequest) {
     let accessToken = request.cookies.get('accessToken')?.value;
     if (!accessToken) {
       const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
-      if (authHeader && authHeader.startsWith('Bearer ')) {
+      if (authHeader && authHeader.startsWith(
+        'Bearer ')) {
         accessToken = authHeader.substring(7).trim();
       }
     }
