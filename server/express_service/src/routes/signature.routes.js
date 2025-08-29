@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { uploadSignature } from "../controllers/signature.controller.js";
+import { uploadSignature, getSignature } from "../controllers/signature.controller.js";
 import { upload } from "../middlewares/upload.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -14,5 +14,8 @@ router.post(
     upload.single("signature"),
     uploadSignature
 );
+
+// Route to retrieve signature
+router.get("/get", getSignature);
 
 export default router;
