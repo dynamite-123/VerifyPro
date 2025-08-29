@@ -5,9 +5,15 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1
 // Proxy API route for document uploads
 export async function POST(request: NextRequest) {
   try {
-    // Get the access token from cookies
-    const accessToken = request.cookies.get('accessToken')?.value;
-    
+    // Get the access token from cookies or Authorization header
+    let accessToken = request.cookies.get('accessToken')?.value;
+    if (!accessToken) {
+      const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        accessToken = authHeader.substring(7).trim();
+      }
+    }
+
     if (!accessToken) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },

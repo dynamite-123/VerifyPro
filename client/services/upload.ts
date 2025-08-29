@@ -23,10 +23,18 @@ export const uploadService = {
       formData.append('front', frontImage);
       formData.append('back', backImage);
       
-      const response = await fetch('/api/upload-documents', {
-        method: 'POST',
-        body: formData
-      });
+  // Forward access token from localStorage if cookie isn't available to the Next proxy
+  const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const headers: Record<string, string> = {};
+  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+
+  const response = await fetch('/api/upload-documents', {
+    method: 'POST',
+    body: formData,
+    headers,
+    // include cookies if present in the browser
+    credentials: 'include'
+  });
       
       const data = await response.json();
       
@@ -60,10 +68,16 @@ export const uploadService = {
         formData.append('signature', signature);
       }
       
-      const response = await fetch('/api/upload-documents', {
-        method: 'POST',
-        body: formData
-      });
+  const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const headers: Record<string, string> = {};
+  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+
+  const response = await fetch('/api/upload-documents', {
+    method: 'POST',
+    body: formData,
+    headers,
+    credentials: 'include'
+  });
       
       const data = await response.json();
       
@@ -104,9 +118,14 @@ export const uploadService = {
       formData.append('signature', signatureFile);
 
   // Use the Next API proxy to forward request to backend
+  const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const headers: Record<string, string> = {};
+  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+
   const response = await fetch('/api/signature/verify', {
         method: 'POST',
         body: formData,
+        headers,
         credentials: 'include'
       });
 

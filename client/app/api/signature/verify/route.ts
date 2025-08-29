@@ -4,7 +4,15 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1
 
 export async function POST(request: NextRequest) {
   try {
-    const accessToken = request.cookies.get('accessToken')?.value;
+    // Get token from cookie or Authorization header
+    let accessToken = request.cookies.get('accessToken')?.value;
+    if (!accessToken) {
+      const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        accessToken = authHeader.substring(7).trim();
+      }
+    }
+
     if (!accessToken) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
