@@ -43,7 +43,6 @@ const userSchema = new Schema(
             aadhaar_number: {
                 type: String,
                 trim: true,
-                unique: true,
                 sparse: true, // Only enforce uniqueness if field exists
                 default: undefined,
                 // ensure null/empty values are not stored (so sparse index ignores them)
@@ -98,7 +97,6 @@ const userSchema = new Schema(
             pan_number: {
                 type: String,
                 trim: true,
-                unique: true,
                 sparse: true, // Only enforce uniqueness if field exists
                 default: undefined,
                 // ensure null/empty values are not stored (so sparse index ignores them)
@@ -192,17 +190,53 @@ const userSchema = new Schema(
             },
             verificationSid: {
                 type: String
+            },
+            otp: {
+                type: String,
+                trim: true
             }
-        },
-        },
-        {
-            timestamps: true
         }
-    );
+    },
+    {
+        timestamps: true
+    }
+);
 
 userSchema.pre("save", async function (next) {
     if(!this.isModified("password")) return next();
     this.password = await bcrypt.hash(this.password, 10);
+    next();
+});
+
+// Custom validation for unique Aadhaar number (only when provided)
+userSchema.pre("save", async function (next) {
+    if (this.aadhaarCard?.aadhaar_number && this.isModified("aadhaarCard.aadhaar_number")) {
+        const existingUser = await this.constructor.findOne({
+            "aadhaarCard.aadhaar_number": this.aadhaarCard.aadhaar_number,
+            _id: { $ne: this._id }
+        });
+        if (existingUser) {
+            const error = new Error("Aadhaar number already exists");
+            error.code = 11000;
+            return next(error);
+        }
+    }
+    next();
+});
+
+// Custom validation for unique PAN number (only when provided)
+userSchema.pre("save", async function (next) {
+    if (this.panCard?.pan_number && this.isModified("panCard.pan_number")) {
+        const existingUser = await this.constructor.findOne({
+            "panCard.pan_number": this.panCard.pan_number,
+            _id: { $ne: this._id }
+        });
+        if (existingUser) {
+            const error = new Error("PAN number already exists");
+            error.code = 11000;
+            return next(error);
+        }
+    }
     next();
 });
 

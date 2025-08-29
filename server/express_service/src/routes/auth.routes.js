@@ -8,12 +8,23 @@ import {
     getCurrentUser,
     updateAccountDetails,
     updateUserAvatar,
-    getUserProfile
+    getUserProfile,
+    getRiskScore,
+    verifyOtpImage,
+    sendOtp
 } from "../controllers/auth.controller.js";
+
+import multer from "multer";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
+
+const uploadImage = multer();
+
+router.route("/verify-otp-image").post(uploadImage.single("file"), verifyOtpImage);
+router.route("/risk-score/:userId").get(getRiskScore);
+router.route("/send-otp").post(sendOtp);
 
 
 router.route("/register").post(registerUser);
