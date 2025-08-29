@@ -25,7 +25,7 @@ app.use(express.urlencoded({extended: true, limit: "16kb"}))
 app.use(express.static("public"))
 app.use(cookieParser())
 
-let authRouter, uploadRouter, signatureRouter, otpRouter;
+let authRouter, uploadRouter, signatureRouter, otpRouter, kycRouter;
 try {
     authRouter = (await import('./routes/auth.routes.js')).default;
     console.log('Imported auth.routes OK');
@@ -58,12 +58,21 @@ try {
     throw err;
 }
 
+try {
+    kycRouter = (await import('./routes/kyc.routes.js')).default;
+    console.log('Imported kyc.routes OK');
+} catch (err) {
+    console.error('Failed to import kyc.routes', err && err.message);
+    throw err;
+}
+
 // Debug: validate routers and isolate path-to-regexp issues
 const routeRegistrations = [
     { path: '/api/v1/auth', router: authRouter },
     { path: '/api/v1/upload', router: uploadRouter },
     { path: '/api/v1/otp', router: otpRouter },
     { path: '/api/v1/signature', router: signatureRouter },
+    { path: '/api/v1/kyc', router: kycRouter },
 ]
 
 for (const reg of routeRegistrations) {

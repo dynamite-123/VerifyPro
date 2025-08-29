@@ -5,10 +5,9 @@ import FormData from "form-data";
 import { User } from "../models/User.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-
-
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { sendOtpToUser } from "../utils/otpUtil.js";
+import { performKYCChecks } from "./kyc.controller.js";
 
 
 
@@ -152,6 +151,18 @@ export const uploadAadhaarCard = asyncHandler(async (req, res) => {
                     });
                 } else {
                     console.error('Failed to send OTP:', sendResult.error || sendResult.raw);
+                }
+            }
+
+            // Perform KYC checks if both documents are uploaded
+            if (hasAadhaar && hasPan) {
+                try {
+                    console.log("Both PAN and Aadhaar uploaded. Performing KYC checks...");
+                    const kycResult = await performKYCChecks(userId);
+                    console.log("KYC checks completed:", kycResult.overall_status);
+                } catch (kycError) {
+                    console.error('KYC check failed:', kycError.message);
+                    // Don't fail the upload if KYC check fails
                 }
             }
         } catch (err) {
@@ -312,6 +323,18 @@ export const uploadPanCard = asyncHandler(async (req, res) => {
                     });
                 } else {
                     console.error('Failed to send OTP:', sendResult.error || sendResult.raw);
+                }
+            }
+
+            // Perform KYC checks if both documents are uploaded
+            if (hasAadhaar && hasPan) {
+                try {
+                    console.log("Both PAN and Aadhaar uploaded. Performing KYC checks...");
+                    const kycResult = await performKYCChecks(userId);
+                    console.log("KYC checks completed:", kycResult.overall_status);
+                } catch (kycError) {
+                    console.error('KYC check failed:', kycError.message);
+                    // Don't fail the upload if KYC check fails
                 }
             }
         } catch (err) {
