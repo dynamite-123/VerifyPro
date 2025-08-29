@@ -119,20 +119,13 @@ export default function VerifySignaturePage() {
               </div>
             )}
 
-            <div className="mt-6 flex gap-3">
+            <div className="mt-6">
               <button
                 type="button"
                 onClick={() => router.push('/dashboard')}
                 className="px-4 py-2 bg-gray-900 text-white rounded-lg"
               >
                 Go to Dashboard
-              </button>
-              <button
-                type="button"
-                onClick={() => { setResult(null); setFile(null); }}
-                className="px-4 py-2 bg-white border border-gray-200 text-gray-800 rounded-lg"
-              >
-                Compare Again
               </button>
             </div>
           </div>
