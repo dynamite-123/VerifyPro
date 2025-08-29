@@ -8,7 +8,11 @@ interface DashboardLayoutProps {
 }
 
 function DashboardLayout({ children }: DashboardLayoutProps) {
-  return children;
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {children}
+    </div>
+  );
 }
 
 export default withAuth(DashboardLayout);

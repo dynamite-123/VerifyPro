@@ -49,11 +49,16 @@ export const uploadService = {
   },
   
   // Upload PAN card
-  uploadPanCard: async (panImage: File): Promise<UploadResponse> => {
+  uploadPanCard: async (panImage: File, signature?: File): Promise<UploadResponse> => {
     try {
       const formData = new FormData();
       formData.append('type', 'pan');
       formData.append('file', panImage);
+      
+      // Add signature if provided
+      if (signature) {
+        formData.append('signature', signature);
+      }
       
       const response = await fetch('/api/upload-documents', {
         method: 'POST',

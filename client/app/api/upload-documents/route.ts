@@ -52,6 +52,12 @@ export async function POST(request: NextRequest) {
       }
       
       backendFormData.append('file', file);
+      
+      // Add signature if provided
+      const signature = formData.get('signature') as File;
+      if (signature) {
+        backendFormData.append('signature', signature);
+      }
     }
     else {
       return NextResponse.json(
