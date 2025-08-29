@@ -14,28 +14,28 @@ const api = axios.create({
 // Auth related API calls
 export const authService = {
   register: async (userData: any) => {
-    const response = await api.post('/auth/register', userData);
-    return response.data;
+  const response = await api.post('/auth/register', userData);
+  return response;
   },
   
   login: async (credentials: any) => {
-    const response = await api.post('/auth/login', credentials);
-    return response.data;
+  const response = await api.post('/auth/login', credentials);
+  return response;
   },
   
   logout: async () => {
-    const response = await api.post('/auth/logout');
-    return response.data;
+  const response = await api.post('/auth/logout');
+  return response;
   },
   
   getCurrentUser: async () => {
-    const response = await api.get('/auth/current-user');
-    return response.data;
+  const response = await api.get('/auth/current-user');
+  return response;
   },
   
   refreshToken: async () => {
-    const response = await api.post('/auth/refresh-token');
-    return response.data;
+  const response = await api.post('/auth/refresh-token');
+  return response;
   }
 };
 
