@@ -1,0 +1,25 @@
+SUPABASE SETUP INSTRUCTIONS
+===========================
+
+1. Go to your Supabase dashboard: https://app.supabase.com/
+2. Navigate to your project: https://qiigcctfdgwukrrnvqzk.supabase.co
+3. Click on "SQL Editor" in the left sidebar
+4. Copy and paste the SQL from setup_supabase.sql file
+5. Click "Run" to execute the SQL
+
+The SQL will:
+- Drop any existing policy_embeddings table
+- Enable the pgvector extension
+- Create the correct table schema
+- Add the similarity search index
+- Create the similarity search function
+
+After running the SQL, test the setup by running:
+python3 test_components.py
+
+If successful, then run:
+python3 test_vectorizer.py
+
+This will process your FATF and RBI PDF documents and store them in Supabase.
+
+IMPORTANT: Make sure to run the SQL in Supabase BEFORE running the test scripts!
