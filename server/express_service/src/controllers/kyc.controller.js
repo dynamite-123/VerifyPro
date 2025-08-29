@@ -123,16 +123,28 @@ export const performKYCChecks = async (userId) => {
       status: linked ? "PASS" : "MANUAL_CHECK",
     });
 
-    // Final Decision
+    // Final Decision - Never reject, only approve or pending review
     const criticalFailures = checks.filter(
       c => c.status === "FAIL" && ["PAN Format", "Aadhaar Format"].includes(c.step)
     );
-    const overall =
-      criticalFailures.length > 0
-        ? "REJECTED"
-        : checks.some(c => c.status === "FAIL")
-        ? "PENDING_REVIEW"
-        : "APPROVED";
+    
+    let overall;
+    if (criticalFailures.length > 0) {
+      overall = "PENDING_REVIEW"; // Instead of REJECTED, send to manual review
+    } else if (checks.some(c => c.status === "FAIL")) {
+      overall = "PENDING_REVIEW";
+    } else {
+      overall = "APPROVED";
+    }
+
+    // Add additional flags for critical failures requiring manual intervention
+    if (criticalFailures.length > 0) {
+      checks.push({
+        step: "Manual Review Required",
+        status: "MANUAL_CHECK",
+        details: "Critical document format issues detected - requires manual verification"
+      });
+    }
 
     // Update user's KYC status in database
     const kycResult = {

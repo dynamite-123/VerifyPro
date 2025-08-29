@@ -132,40 +132,186 @@ const getRiskScore = asyncHandler(async (req, res) => {
         flags.push("Adverse Media Match");
     }
 
-    // KYC risk aversion
-    let kycScore = 0;
-    if (user.kycStatus === 'verified') {
-        kycScore = 20;
-    } else if (user.kycStatus === 'pending') {
-        kycScore = 5;
-    } else if (user.kycStatus === 'rejected') {
-        kycScore = -20;
-        flags.push("KYC Rejected");
-    }
-    score += kycScore;
+    // Advanced KYC Risk Assessment
+    let kycRiskAdjustment = 0;
+    let kycDetails = {
+        completeness: 0,
+        accuracy: 0,
+        consistency: 0,
+        timeToComplete: 0
+    };
 
-    // Optionally, check detailed KYC checks
+    // 1. KYC Completeness Analysis
+    const requiredFields = ['panCard', 'aadhaarCard', 'address', 'dateOfBirth'];
+    const completedFields = requiredFields.filter(field => {
+        if (field === 'panCard') return user.panCard?.pan_number;
+        if (field === 'aadhaarCard') return user.aadhaarCard?.aadhaar_number;
+        if (field === 'address') return user.aadhaarCard?.address;
+        if (field === 'dateOfBirth') return user.panCard?.date_of_birth || user.aadhaarCard?.date_of_birth;
+        return false;
+    });
+    
+    const completenessRatio = completedFields.length / requiredFields.length;
+    kycDetails.completeness = Math.round(completenessRatio * 100);
+    
+    if (completenessRatio < 0.5) {
+        kycRiskAdjustment -= 30;
+        flags.push("Incomplete KYC Documentation");
+    } else if (completenessRatio < 0.8) {
+        kycRiskAdjustment -= 15;
+        flags.push("Partially Complete KYC");
+    } else if (completenessRatio === 1) {
+        kycRiskAdjustment += 10;
+    }
+
+    // 2. Document Verification Quality Assessment
     if (user.kycVerification?.checks?.length) {
+        let passedChecks = 0;
+        let criticalFailures = 0;
+        let minorFailures = 0;
+        
+        const criticalChecks = ['PAN Format', 'Aadhaar Format', 'Name Match'];
+        const minorChecks = ['DOB Match', 'Address Validation', 'Father Name Match'];
+        
         user.kycVerification.checks.forEach(check => {
-            if (check.status === 'FAIL') {
-                score -= 5;
-                flags.push(`KYC Check Failed: ${check.step}`);
-            } else if (check.status === 'PASS') {
-                score += 2;
+            if (check.status === 'PASS') {
+                passedChecks++;
+                kycRiskAdjustment += 1;
+            } else if (check.status === 'FAIL') {
+                if (criticalChecks.includes(check.step)) {
+                    criticalFailures++;
+                    kycRiskAdjustment -= 15;
+                    flags.push(`Critical KYC Failure: ${check.step}`);
+                } else if (minorChecks.includes(check.step)) {
+                    minorFailures++;
+                    kycRiskAdjustment -= 5;
+                    flags.push(`Minor KYC Issue: ${check.step}`);
+                }
+            } else if (check.status === 'MANUAL_CHECK') {
+                kycRiskAdjustment -= 8;
+                flags.push(`Manual Review Required: ${check.step}`);
             }
         });
+        
+        const totalChecks = user.kycVerification.checks.length;
+        kycDetails.accuracy = Math.round((passedChecks / totalChecks) * 100);
+        
+        // Consistency scoring based on cross-verification
+        const nameMatchCheck = user.kycVerification.checks.find(c => c.step === 'Name Match');
+        const dobMatchCheck = user.kycVerification.checks.find(c => c.step === 'DOB Match');
+        
+        let consistencyScore = 100;
+        if (nameMatchCheck?.status === 'FAIL') consistencyScore -= 40;
+        if (dobMatchCheck?.status === 'FAIL') consistencyScore -= 30;
+        if (criticalFailures > 0) consistencyScore -= (criticalFailures * 20);
+        if (minorFailures > 1) consistencyScore -= (minorFailures * 10);
+        
+        kycDetails.consistency = Math.max(0, consistencyScore);
+        
+        // Penalize multiple failures
+        if (criticalFailures >= 2) {
+            kycRiskAdjustment -= 25;
+            flags.push("Multiple Critical Document Issues");
+        }
     }
+
+    // 3. Time-based Risk Assessment
+    const accountAge = user.createdAt ? (new Date() - new Date(user.createdAt)) / (1000 * 60 * 60 * 24) : 0;
+    if (accountAge < 1) {
+        kycRiskAdjustment -= 20;
+        flags.push("Very New Account");
+    } else if (accountAge < 7) {
+        kycRiskAdjustment -= 10;
+        flags.push("New Account");
+    } else if (accountAge > 90) {
+        kycRiskAdjustment += 5; // Established account bonus
+    }
+
+    // 4. Behavioral Risk Indicators
+    if (user.loginAttempts && user.loginAttempts > 5) {
+        kycRiskAdjustment -= 15;
+        flags.push("Multiple Failed Login Attempts");
+    }
+
+    if (user.otpVerification?.status === 'failed') {
+        kycRiskAdjustment -= 10;
+        flags.push("Failed OTP Verification");
+    } else if (user.otpVerification?.status === 'verified') {
+        kycRiskAdjustment += 8;
+    }
+
+    // 5. Device and Location Risk (placeholder for future implementation)
+    const deviceRisk = 0; // Could check for VPN, suspicious devices, etc.
+    const locationRisk = 0; // Could check for high-risk countries, IP reputation
+
+    // Calculate KYC completion time impact
+    if (user.kycVerification?.performed_at && user.createdAt) {
+        const kycCompletionTime = (new Date(user.kycVerification.performed_at) - new Date(user.createdAt)) / (1000 * 60 * 60);
+        kycDetails.timeToComplete = Math.round(kycCompletionTime);
+        
+        if (kycCompletionTime < 1) {
+            kycRiskAdjustment -= 15; // Too fast completion is suspicious
+            flags.push("Unusually Fast KYC Completion");
+        } else if (kycCompletionTime > 168) { // More than a week
+            kycRiskAdjustment -= 5;
+            flags.push("Delayed KYC Completion");
+        }
+    }
+
+    score += kycRiskAdjustment;
 
     // Clamp score between 0 and 100
     score = Math.max(0, Math.min(100, score));
+
+    // Determine risk level and recommended action
+    let riskLevel, recommendedAction;
+    if (score >= 80) {
+        riskLevel = 'LOW';
+        recommendedAction = 'APPROVED';
+    } else if (score >= 60) {
+        riskLevel = 'MEDIUM';
+        recommendedAction = 'APPROVED';
+    } else if (score >= 40) {
+        riskLevel = 'HIGH';
+        recommendedAction = 'PENDING_REVIEW';
+        flags.push("High Risk - Manual Review Required");
+    } else {
+        riskLevel = 'CRITICAL';
+        recommendedAction = 'PENDING_REVIEW';
+        flags.push("Critical Risk - Comprehensive Manual Review Required");
+    }
+
+    // Update user's KYC verification status if needed
+    if (user.kycVerification && user.kycVerification.overall_status !== recommendedAction) {
+        await User.findByIdAndUpdate(userId, {
+            "kycVerification.overall_status": recommendedAction,
+            "kycVerification.risk_assessment_performed_at": new Date(),
+            "kycStatus": recommendedAction === 'APPROVED' ? 'verified' : 'pending'
+        });
+    }
 
     return res.status(200).json(new ApiResponse(200, {
         userId,
         name: user.name,
         riskScore: score,
+        riskLevel,
+        recommendedAction,
         flags,
         kycStatus: user.kycStatus,
-        kycVerification: user.kycVerification
+        kycVerification: user.kycVerification,
+        riskAnalysis: {
+            watchlistMatches: {
+                sanctions: sanctions.some(n => n.trim().toUpperCase() === userName),
+                peps: peps.some(p => p.name?.trim().toUpperCase() === userName),
+                adverseMedia: adverseMedia.some(a => a.entity?.trim().toUpperCase() === userName)
+            },
+            kycAnalysis: kycDetails,
+            accountAge: Math.round(accountAge),
+            behavioralRisk: {
+                otpStatus: user.otpVerification?.status || 'not_attempted',
+                loginAttempts: user.loginAttempts || 0
+            }
+        }
     }, "Risk score calculated successfully"));
 });
 
