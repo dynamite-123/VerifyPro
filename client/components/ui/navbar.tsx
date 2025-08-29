@@ -63,6 +63,16 @@ const Navbar = () => {
                   >
                     Upload Documents
                   </Link>
+                  <Link 
+                    href="/quant" 
+                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                      pathname.startsWith('/quant') 
+                        ? 'border-gray-900 text-gray-900' 
+                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    }`}
+                  >
+                    Quantum Trust
+                  </Link>
                 </>
               ) : (
                 <>
@@ -160,6 +170,17 @@ const Navbar = () => {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Upload Documents
+                </Link>
+                <Link
+                  href="/quant"
+                  className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                    pathname.startsWith('/quant')
+                      ? 'bg-gray-50 border-gray-900 text-gray-900'
+                      : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                  }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Quantum Trust
                 </Link>
               </>
             ) : (
