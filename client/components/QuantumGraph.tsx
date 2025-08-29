@@ -159,30 +159,23 @@ const QuantumTrustGraph: React.FC = () => {
 
     svg.selectAll('*').remove();
 
-    // Create simulation
-    const simulation = d3.forceSimulation(networkData.nodes)
-      .force('link', d3.forceLink(networkData.links).id((d: any) => d.id).distance(120))
-      .force('charge', d3.forceManyBody().strength(-400))
-      .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide().radius(30))
-      .alpha(0.3)
-      .stop(); // Stop the simulation immediately
-      
-    // Run the simulation synchronously for a fixed number of ticks
-    // This will calculate positions without animation
-    simulation.tick(300);
-
-    simulationRef.current = simulation;
-
-    // Add gradients
+    // Add defs (gradients / filters)
     const defs = svg.append('defs');
     const riskGradient = defs.append('linearGradient').attr('id', 'riskGradient');
     riskGradient.append('stop').attr('offset', '0%').attr('stop-color', '#10b981');
     riskGradient.append('stop').attr('offset', '50%').attr('stop-color', '#f59e0b');
     riskGradient.append('stop').attr('offset', '100%').attr('stop-color', '#ef4444');
 
-    // Add links
+    // gentle drop shadow for nodes
+    const filter = defs.append('filter').attr('id', 'nodeShadow');
+    filter.append('feDropShadow').attr('dx', 0).attr('dy', 2).attr('stdDeviation', 3).attr('flood-opacity', 0.15);
+
+  // No simulation: render statically from provided x/y positions
+  simulationRef.current = null;
+
+    // Add links (visible immediately; subtle stroke-width animation is possible)
     const link = svg.append('g')
+      .attr('stroke-opacity', 0.9)
       .selectAll('line')
       .data(networkData.links)
       .enter()
@@ -190,89 +183,99 @@ const QuantumTrustGraph: React.FC = () => {
       .attr('stroke', (d: any) => getLinkColor(d.type))
       .attr('stroke-width', (d: any) => Math.max(1, d.strength * 4))
       .attr('stroke-dasharray', (d: any) => d.type === 'hidden' ? '5,5' : 'none')
-      .style('opacity', 0.8);
+      .style('opacity', 0.85);
 
-    // Add nodes
-    const node = svg.append('g')
-      .selectAll('circle')
+  // Node groups so we can position the whole group (circle + interactions)
+    const nodeGroup = svg.append('g')
+      .selectAll('g')
       .data(networkData.nodes)
       .enter()
-      .append('circle')
+      .append('g')
+      .attr('class', 'node-group')
+      .style('pointer-events', 'all');
+
+    const node = nodeGroup.append('circle')
       .attr('r', (d: any) => getNodeSize(d.type))
       .attr('fill', (d: any) => getNodeColor(d.type, d.risk))
-      .style('cursor', 'pointer')
       .style('stroke', '#fff')
       .style('stroke-width', '2px')
-      .on('mouseover', function(event: any, d: any) {
-        setTooltip({ show: true, x: event.pageX, y: event.pageY, data: d });
-        d3.select(this)
-          .transition()
-          .duration(200)
-          .attr('r', getNodeSize(d.type) * 1.2);
-      })
-      .on('mouseout', function(event: any, d: any) {
-        setTooltip({ show: false, x: 0, y: 0, data: null });
-        d3.select(this)
-          .transition()
-          .duration(200)
-          .attr('r', getNodeSize(d.type));
-      })
-      .on('click', (event: any, d: any) => {
-        setSelectedNode(d);
-      });
+      .attr('filter', 'url(#nodeShadow)')
+      .style('opacity', 1)
+      .style('transform-origin', 'center center');
 
-    // Add labels
+    // Add labels (separate so they stay readable)
     const label = svg.append('g')
       .selectAll('text')
       .data(networkData.nodes)
       .enter()
       .append('text')
       .text((d: any) => d.name)
-      .attr('dy', (d: any) => getNodeSize(d.type) + 15)
+      .attr('dy', (d: any) => getNodeSize(d.type) + 12)
       .style('font-size', '10px')
       .style('text-anchor', 'middle')
-      .style('fill', '#333')  // Dark color for better visibility on white background
-      .style('pointer-events', 'none');
+      .style('fill', '#333')
+      .style('pointer-events', 'none')
+      .style('opacity', 1);
 
-    // Update positions once (no animation)
-    link
-      .attr('x1', (d: any) => d.source.x)
-      .attr('y1', (d: any) => d.source.y)
-      .attr('x2', (d: any) => d.target.x)
-      .attr('y2', (d: any) => d.target.y);
+    // Interactions (no animations/transitions)
+    nodeGroup.on('mouseover', function(event: any, d: any) {
+      setTooltip({ show: true, x: event.pageX, y: event.pageY, data: d });
+      d3.select(this).select('circle')
+        .attr('r', getNodeSize(d.type) * 1.25);
+    })
+    .on('mouseout', function(event: any, d: any) {
+      setTooltip({ show: false, x: 0, y: 0, data: null });
+      d3.select(this).select('circle')
+        .attr('r', getNodeSize(d.type));
+    })
+    .on('click', (event: any, d: any) => setSelectedNode(d));
 
-    node
-      .attr('cx', (d: any) => d.x)
-      .attr('cy', (d: any) => d.y);
-
-    label
-      .attr('x', (d: any) => d.x)
-      .attr('y', (d: any) => d.y);
-
-    // Add static drag behavior without simulation
-    node.call(d3.drag<any, any>()
-      .on('drag', (event: any, d: any) => {
-        // Move the node
+    // Drag behavior: update node position directly (no simulation)
+    const drag = d3.drag<any, any>()
+      .on('start', (event: any, d: any) => {
+        // nothing animated, just pin
         d.x = event.x;
         d.y = event.y;
-        d3.select(event.sourceEvent.target)
-          .attr('cx', d.x)
-          .attr('cy', d.y);
-
-        // Move connected links
+      })
+      .on('drag', (event: any, d: any) => {
+        d.x = event.x;
+        d.y = event.y;
+        d3.select(event.sourceEvent.target.parentNode)
+          .attr('transform', `translate(${d.x},${d.y})`);
+        // update connected links in DOM
         link
-          .filter((l: any) => l.source.id === d.id || l.target.id === d.id)
-          .attr('x1', (l: any) => l.source.x)
-          .attr('y1', (l: any) => l.source.y)
-          .attr('x2', (l: any) => l.target.x)
-          .attr('y2', (l: any) => l.target.y);
-        
-        // Move the label
-        label
-          .filter((t: any) => t.id === d.id)
-          .attr('x', d.x)
-          .attr('y', d.y);
-      }));
+          .filter((l: any) => (l.source as any).id === d.id || (l.target as any).id === d.id)
+          .attr('x1', (l: any) => (l.source as any).x)
+          .attr('y1', (l: any) => (l.source as any).y)
+          .attr('x2', (l: any) => (l.target as any).x)
+          .attr('y2', (l: any) => (l.target as any).y);
+      })
+      .on('end', (_event: any, _d: any) => {
+        // nothing — node stays where dragged
+      });
+
+    nodeGroup.call(drag as any);
+
+    // Position links and nodes statically from node.x/node.y
+    // Ensure link source/target point to node objects (if strings provided)
+    const nodeById = new Map(networkData.nodes.map((n: any) => [n.id, n]));
+    networkData.links.forEach((l: any) => {
+      if (typeof l.source === 'string') l.source = nodeById.get(l.source) || l.source;
+      if (typeof l.target === 'string') l.target = nodeById.get(l.target) || l.target;
+    });
+
+    link
+      .attr('x1', (d: any) => (d.source as any).x)
+      .attr('y1', (d: any) => (d.source as any).y)
+      .attr('x2', (d: any) => (d.target as any).x)
+      .attr('y2', (d: any) => (d.target as any).y);
+
+    nodeGroup.attr('transform', (d: any) => `translate(${d.x},${d.y})`);
+    label
+      .attr('x', (d: any) => d.x)
+      .attr('y', (d: any) => d.y + getNodeSize(d.type) + 8);
+
+  // No mousemove animations or inactivity timers — static rendering only
 
   }, [networkData]);
 
@@ -360,6 +363,29 @@ const QuantumTrustGraph: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Inline styles for SVG animations */}
+      <style>{`
+        /* Smooth transform for node groups so movement looks polished */
+        .node-group {
+          transition: transform 180ms cubic-bezier(.2,.8,.2,1);
+        }
+
+        /* Pulse high-risk nodes */
+        .high-risk {
+          transform-origin: center center;
+          animation: qpulse 2.6s ease-in-out infinite;
+        }
+
+        @keyframes qpulse {
+          0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(0,0,0,0)); }
+          50% { transform: scale(1.06); filter: drop-shadow(0 6px 18px rgba(239,68,68,0.14)); }
+          100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(0,0,0,0)); }
+        }
+
+        /* subtle fade-in for links and labels */
+        line { transition: stroke-opacity 240ms ease, stroke-width 240ms ease; }
+        text { transition: opacity 240ms ease, transform 240ms ease; }
+      `}</style>
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-100 p-4 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between gap-4 sm:items-center">
