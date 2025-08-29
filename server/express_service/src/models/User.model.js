@@ -40,7 +40,7 @@ const userSchema = new Schema(
             type: String
         },
         aadhaarCard: {
-            number: {
+            aadhaar_number: {
                 type: String,
                 trim: true,
                 unique: true,
@@ -150,6 +150,25 @@ const userSchema = new Schema(
         kycRejectedReason: {
             type: String,
             default: ''
+        },
+        kycVerification: {
+            overall_status: {
+                type: String,
+                enum: ['APPROVED', 'PENDING_REVIEW', 'REJECTED'],
+                default: null
+            },
+            checks: [{
+                step: String,
+                status: {
+                    type: String,
+                    enum: ['PASS', 'FAIL', 'MANUAL_CHECK']
+                },
+                details: String
+            }],
+            performed_at: {
+                type: Date,
+                default: null
+            }
         },
         otpPicture: {
             type: String,
