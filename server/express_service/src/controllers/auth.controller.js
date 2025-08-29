@@ -2,7 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/User.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+// cloudinary removed; using local file path for avatar
 import jwt from "jsonwebtoken";
 
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -268,17 +268,14 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Photo file is missing");
     }
 
-    const photo = await uploadOnCloudinary(photoLocalPath);
-
-    if (!photo.url) {
-        throw new ApiError(400, "Error while uploading photo");
-    }
+    // store the local path (or later switch to another uploader)
+    const storedPhotoUrl = photoLocalPath.replace(/\\/g, "/");
 
     const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: {
-                photo: photo.url
+                photo: storedPhotoUrl
             }
         },
         { new: true }
