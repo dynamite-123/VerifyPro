@@ -8,6 +8,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 
 
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { sendOtpToUser } from "../utils/otpUtil.js";
 
 
 
@@ -128,6 +129,33 @@ export const uploadAadhaarCard = asyncHandler(async (req, res) => {
 
         if (!user) {
             throw new ApiError(500, "Error updating user with Aadhaar card data");
+        }
+
+        // If both Aadhaar and PAN details exist and OTP not yet sent, send OTP via Nexmo/Vonage
+        try {
+            const hasAadhaar = user.aadhaarCard && user.aadhaarCard.aadhaar_number;
+            const hasPan = user.panCard && user.panCard.pan_number;
+            const otpPending = !user.otpVerification || !user.otpVerification.sentAt;
+
+            if (hasAadhaar && hasPan && otpPending) {
+                const phone = user.phoneNumber || user.aadhaarCard?.phone_number || '';
+                const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+                const text = `Your VerifyPro OTP is ${otpCode}`;
+
+                const sendResult = await sendOtpToUser(phone, text);
+                if (sendResult.success) {
+                    await User.findByIdAndUpdate(userId, {
+                        'otpVerification.phoneNumber': phone,
+                        'otpVerification.status': 'pending',
+                        'otpVerification.sentAt': new Date(),
+                        'otpVerification.verificationSid': JSON.stringify(sendResult.data || {}),
+                    });
+                } else {
+                    console.error('Failed to send OTP:', sendResult.error || sendResult.raw);
+                }
+            }
+        } catch (err) {
+            console.error('Error while attempting to send OTP:', err.message || err);
         }
 
         return res.status(200).json(
@@ -259,6 +287,35 @@ export const uploadPanCard = asyncHandler(async (req, res) => {
 
         if (!user) {
             throw new ApiError(500, "Error updating user with PAN card data");
+        }
+
+        // If both Aadhaar and PAN details exist and OTP not yet sent, send OTP via Nexmo/Vonage
+        try {
+            const hasAadhaar = user.aadhaarCard && user.aadhaarCard.aadhaar_number;
+            const hasPan = user.panCard && user.panCard.pan_number;
+            const otpPending = !user.otpVerification || !user.otpVerification.sentAt;
+
+            if (hasAadhaar && hasPan && otpPending) {
+                const phone = user.phoneNumber || user.aadhaarCard?.phone_number || '';
+                const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+                const text = `Your VerifyPro OTP is ${otpCode}`;
+
+                const sendResult = await sendOtpToUser(phone, text);
+                if (sendResult.success) {
+                    // persist sent OTP meta (do not store code in DB in plaintext in production)
+                    await User.findByIdAndUpdate(userId, {
+                        'otpVerification.phoneNumber': phone,
+                        'otpVerification.status': 'pending',
+                        'otpVerification.sentAt': new Date(),
+                        // store verificationSid raw response for tracing
+                        'otpVerification.verificationSid': JSON.stringify(sendResult.data || {}),
+                    });
+                } else {
+                    console.error('Failed to send OTP:', sendResult.error || sendResult.raw);
+                }
+            }
+        } catch (err) {
+            console.error('Error while attempting to send OTP:', err.message || err);
         }
 
         return res.status(200).json(
