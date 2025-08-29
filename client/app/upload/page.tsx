@@ -108,7 +108,10 @@ export default function UploadPage() {
     setIsLoading(true);
     setIsVerifying(true);
     
-    try {
+  let aadhaarResp: any = null;
+  let panResp: any = null;
+
+  try {
       // Clear any previous errors
       setErrors({});
       
@@ -120,12 +123,12 @@ export default function UploadPage() {
       
       // Upload Aadhaar card (front and back)
       if (formData.aadhaarFront && formData.aadhaarBack) {
-        const aadhaarResponse = await uploadService.uploadAadhaarCard(
+        aadhaarResp = await uploadService.uploadAadhaarCard(
           formData.aadhaarFront,
           formData.aadhaarBack
         );
         
-        if (aadhaarResponse.success) {
+        if (aadhaarResp && aadhaarResp.success) {
           setVerificationStatus(prev => ({
             ...prev,
             aadhaar: 'success'
@@ -133,27 +136,27 @@ export default function UploadPage() {
           
           // Update user data in context
           await refreshUser();
-        } else {
-          console.error('Aadhaar upload error:', aadhaarResponse.message);
+        } else if (aadhaarResp && !aadhaarResp.success) {
+          console.error('Aadhaar upload error:', aadhaarResp.message);
           setVerificationStatus(prev => ({
             ...prev,
             aadhaar: 'error'
           }));
           setErrors(prev => ({
             ...prev,
-            aadhaarFront: aadhaarResponse.message || 'Failed to process Aadhaar card'
+            aadhaarFront: aadhaarResp.message || 'Failed to process Aadhaar card'
           }));
         }
       }
       
       // Upload PAN card
       if (formData.panCard) {
-        const panResponse = await uploadService.uploadPanCard(
+        panResp = await uploadService.uploadPanCard(
           formData.panCard, 
           formData.signature || undefined
         );
         
-        if (panResponse.success) {
+        if (panResp && panResp.success) {
           setVerificationStatus(prev => ({
             ...prev,
             pan: 'success'
@@ -161,17 +164,46 @@ export default function UploadPage() {
           
           // Update user data in context
           await refreshUser();
-        } else {
-          console.error('PAN upload error:', panResponse.message);
+        } else if (panResp && !panResp.success) {
+          console.error('PAN upload error:', panResp.message);
           setVerificationStatus(prev => ({
             ...prev,
             pan: 'error'
           }));
           setErrors(prev => ({
             ...prev,
-            panCard: panResponse.message || 'Failed to process PAN card'
+            panCard: panResp.message || 'Failed to process PAN card'
           }));
         }
+      }
+
+      // After both uploads succeed, if an extracted signature exists, redirect to compare page
+      const aadhaarOk = aadhaarResp ? aadhaarResp.success : true; // if not uploaded here, assume previously present
+      const panOk = panResp ? panResp.success : true;
+
+      const signaturePresent = Boolean(
+        formData.signature ||
+        panResp?.data?.data?.user?.panCard?.signature_present ||
+        (user?.panCard && user.panCard.signature_present)
+      );
+
+      if (aadhaarOk && panOk && signaturePresent) {
+        router.push('/upload/verify-signature');
+      }
+      // If both verified and signature exists, redirect to signature compare page
+      if (
+        verificationStatus.aadhaar === 'success' || verificationStatus.aadhaar === 'pending' && user?.aadhaarCard?.aadhaar_number && user?.aadhaarCard?.verified || false
+      ) {
+        // after refreshUser earlier, re-evaluate user from context; if both present redirect
+      }
+
+      // Redirect when both aadhaar and pan verified
+      if (
+        (verificationStatus.aadhaar === 'success' || user?.aadhaarCard?.verified) &&
+        (verificationStatus.pan === 'success' || user?.panCard?.verified)
+      ) {
+        // If signature was extracted and saved, go to compare page
+        router.push('/upload/verify-signature');
       }
       
     } catch (error) {
@@ -215,6 +247,18 @@ export default function UploadPage() {
       title="Document Verification"
       subtitle="Upload your documents for verification to complete your profile"
     >
+      {/* Full-screen translucent overlay while verifying */}
+      {isVerifying && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4">
+            <svg className="animate-spin h-12 w-12 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <p className="text-sm text-white">Verifying documents — this may take a few seconds</p>
+          </div>
+        </div>
+      )}
       {errors.form && (
         <div className="p-3.5 bg-red-50 border border-red-100 text-red-500 rounded-lg text-xs font-light mb-6">
           {errors.form}

@@ -14,7 +14,7 @@ export default function DashboardPage() {
           <div className="border-b border-gray-200 pb-5 mb-2">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Welcome to VerifyPro</h1>
+                <h1 className="text-3xl font-bold text-gray-900">Welcome to Verify<span className='text-green-600'>Pro</span></h1>
                 <p className="mt-2 text-sm text-gray-600 max-w-lg">
                   Your trusted platform for secure document verification and digital identity management.
                 </p>

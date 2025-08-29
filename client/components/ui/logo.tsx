@@ -27,7 +27,7 @@ const Logo: React.FC<LogoProps> = ({ size = 'md', className = '' }) => {
   return (
     <div className={`inline-block tracking-wide ${sizeClasses[size]} ${className}`}>
       <span className={`${montserrat.className} text-gray-900 font-bold align-middle`}>Verify</span>
-      <span className={`${poppins.className} text-gray-600 font-extrabold align-middle`}>Pro</span>
+      <span className={`${poppins.className} text-green-600 font-extrabold align-middle`}>Pro</span>
     </div>
   );
 };

@@ -95,6 +95,35 @@ export const uploadService = {
       throw error;
     }
   }
+  ,
+
+  // Compare user extracted signature with a newly uploaded signature via server
+  compareSignature: async (signatureFile: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('signature', signatureFile);
+
+  // Use the Next API proxy to forward request to backend
+  const response = await fetch('/api/signature/verify', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        return { success: false, message: data.message || data.detail || 'Signature verification failed' };
+      }
+
+      // The Next proxy returns a wrapper { success, data, message } where data is the backend payload.
+      // Unwrap so callers receive the backend response directly.
+      const backendPayload = data?.data ?? data;
+      return { success: true, data: backendPayload };
+    } catch (error: any) {
+      console.error('Error comparing signature:', error);
+      return { success: false, message: error.message || 'Network error' };
+    }
+  }
 };
 
 export default uploadService;
