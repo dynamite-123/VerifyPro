@@ -5,6 +5,8 @@ import FormData from "form-data";
 import { User } from "../models/User.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+
+
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 
@@ -242,19 +244,10 @@ export const uploadPanCard = asyncHandler(async (req, res) => {
             "panCard.verified": false,
         };
 
-        // If signature file is provided, upload to cloudinary and store URL
+        // If signature file is provided, store its local path and mark as present
         if (signatureFile) {
-            try {
-                const cloudinaryResponse = await uploadOnCloudinary(signatureFile.path);
-                
-                if (cloudinaryResponse) {
-                    updateFields["panCard.signature_present"] = true;
-                    updateFields["panCard.signatureUrl"] = cloudinaryResponse.secure_url;
-                }
-            } catch (error) {
-                console.error("Error uploading signature to Cloudinary:", error);
-                // Continue with PAN update even if signature upload fails
-            }
+            updateFields["panCard.signature_present"] = true;
+            updateFields["panCard.signatureUrl"] = signatureFile.path.replace(/\\/g, "/");
         }
 
 

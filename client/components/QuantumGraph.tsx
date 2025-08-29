@@ -203,11 +203,19 @@ const QuantumTrustGraph: React.FC = () => {
       .style('cursor', 'pointer')
       .style('stroke', '#fff')
       .style('stroke-width', '2px')
-      .on('mouseover', (event: any, d: any) => {
+      .on('mouseover', function(event: any, d: any) {
         setTooltip({ show: true, x: event.pageX, y: event.pageY, data: d });
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .attr('r', getNodeSize(d.type) * 1.2);
       })
-      .on('mouseout', () => {
+      .on('mouseout', function(event: any, d: any) {
         setTooltip({ show: false, x: 0, y: 0, data: null });
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .attr('r', getNodeSize(d.type));
       })
       .on('click', (event: any, d: any) => {
         setSelectedNode(d);

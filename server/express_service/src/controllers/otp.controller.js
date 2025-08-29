@@ -2,10 +2,8 @@ import { User } from "../models/User.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import TwilioService from "../utils/twilioService.js";
 
-const twilioService = new TwilioService();
-
+// Send OTP for verification
 export const sendOTPForVerification = asyncHandler(async (req, res) => {
     const userId = req.user?._id;
     if (!userId) {
@@ -23,8 +21,11 @@ export const sendOTPForVerification = asyncHandler(async (req, res) => {
             throw new ApiError(404, "User not found");
         }
 
-        const result = await twilioService.sendOTP(phoneNumber);
-        
+        // Generate a 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const message = `Your VerifyPro OTP is: ${otp}`;
+        const result = await sendVoyageSMS(phoneNumber, message);
+
         if (!result.success) {
             throw new ApiError(500, `Failed to send OTP: ${result.error}`);
         }
@@ -34,17 +35,14 @@ export const sendOTPForVerification = asyncHandler(async (req, res) => {
                 'otpVerification.phoneNumber': phoneNumber,
                 'otpVerification.status': 'pending',
                 'otpVerification.sentAt': new Date(),
-                'otpVerification.verificationSid': result.sid
+                'otpVerification.otp': otp
             }
         });
 
         return res.status(200).json(
             new ApiResponse(
                 200,
-                { 
-                    status: result.status,
-                    phoneNumber: phoneNumber
-                },
+                { phoneNumber },
                 "OTP sent successfully"
             )
         );
@@ -56,6 +54,8 @@ export const sendOTPForVerification = asyncHandler(async (req, res) => {
     }
 });
 
+
+// Verify OTP
 export const verifyOTP = asyncHandler(async (req, res) => {
     const userId = req.user?._id;
     if (!userId) {
@@ -73,17 +73,15 @@ export const verifyOTP = asyncHandler(async (req, res) => {
             throw new ApiError(404, "User not found");
         }
 
-        const result = await twilioService.verifyOTP(phoneNumber, otp);
-        
-        if (!result.success) {
+        // Compare OTP
+        if (user.otpVerification?.otp !== otp) {
             await User.findByIdAndUpdate(userId, {
                 $set: {
                     'otpVerification.status': 'failed',
                     'otpVerification.verifiedAt': new Date()
                 }
             });
-            
-            throw new ApiError(400, `OTP verification failed: ${result.error || 'Invalid OTP'}`);
+            throw new ApiError(400, `OTP verification failed: Invalid OTP`);
         }
 
         const updatedUser = await User.findByIdAndUpdate(
@@ -101,10 +99,7 @@ export const verifyOTP = asyncHandler(async (req, res) => {
         return res.status(200).json(
             new ApiResponse(
                 200,
-                { 
-                    user: updatedUser,
-                    status: result.status
-                },
+                { user: updatedUser },
                 "OTP verified successfully"
             )
         );
@@ -116,6 +111,8 @@ export const verifyOTP = asyncHandler(async (req, res) => {
     }
 });
 
+
+// Resend OTP
 export const resendOTP = asyncHandler(async (req, res) => {
     const userId = req.user?._id;
     if (!userId) {
@@ -137,7 +134,6 @@ export const resendOTP = asyncHandler(async (req, res) => {
         if (lastSent) {
             const timeDiff = Date.now() - new Date(lastSent).getTime();
             const cooldownPeriod = 60000; // 1 minute
-            
             if (timeDiff < cooldownPeriod) {
                 const remainingTime = Math.ceil((cooldownPeriod - timeDiff) / 1000);
                 throw new ApiError(
@@ -147,8 +143,11 @@ export const resendOTP = asyncHandler(async (req, res) => {
             }
         }
 
-        const result = await twilioService.sendOTP(phoneNumber);
-        
+        // Generate a new OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const message = `Your VerifyPro OTP is: ${otp}`;
+        const result = await sendVoyageSMS(phoneNumber, message);
+
         if (!result.success) {
             throw new ApiError(500, `Failed to resend OTP: ${result.error}`);
         }
@@ -158,17 +157,14 @@ export const resendOTP = asyncHandler(async (req, res) => {
                 'otpVerification.phoneNumber': phoneNumber,
                 'otpVerification.status': 'pending',
                 'otpVerification.sentAt': new Date(),
-                'otpVerification.verificationSid': result.sid
+                'otpVerification.otp': otp
             }
         });
 
         return res.status(200).json(
             new ApiResponse(
                 200,
-                { 
-                    status: result.status,
-                    phoneNumber: phoneNumber
-                },
+                { phoneNumber },
                 "OTP resent successfully"
             )
         );
@@ -209,8 +205,8 @@ export const sendKYCStatusSMS = asyncHandler(async (req, res) => {
                 throw new ApiError(400, "Invalid KYC status");
         }
 
-        const result = await twilioService.sendCustomSMS(user.phoneNumber, message);
-        
+        const result = await sendVoyageSMS(user.phoneNumber, message);
+
         if (!result.success) {
             throw new ApiError(500, `Failed to send SMS: ${result.error}`);
         }
@@ -218,10 +214,7 @@ export const sendKYCStatusSMS = asyncHandler(async (req, res) => {
         return res.status(200).json(
             new ApiResponse(
                 200,
-                { 
-                    status: result.status,
-                    messageSid: result.sid
-                },
+                { message: message },
                 "KYC status SMS sent successfully"
             )
         );
