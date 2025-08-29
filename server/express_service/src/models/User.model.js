@@ -40,7 +40,7 @@ const userSchema = new Schema(
             type: String
         },
         aadhaarCard: {
-            aadhaar_number: {
+            number: {
                 type: String,
                 trim: true,
                 unique: true,
