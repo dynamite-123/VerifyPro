@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import UploadContainer from '@/components/upload/upload-container';
 import FileUpload from '@/components/upload/file-upload';
+import SignatureCrop from '@/components/upload/signature-crop';
 import StatusBadge from '@/components/ui/status-badge';
 import { uploadService } from '@/services/upload';
 import { useAuth } from '@/contexts/auth-context';
@@ -12,6 +13,7 @@ interface UploadFormData {
   aadhaarFront: File | null;
   aadhaarBack: File | null;
   panCard: File | null;
+  signature: File | null;
 }
 
 // Verification status for each document
@@ -28,7 +30,8 @@ export default function UploadPage() {
   const [formData, setFormData] = useState<UploadFormData>({
     aadhaarFront: null,
     aadhaarBack: null,
-    panCard: null
+    panCard: null,
+    signature: null
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>({
@@ -64,6 +67,14 @@ export default function UploadPage() {
       setErrors(prev => ({
         ...prev,
         [field]: ''
+      }));
+    }
+    
+    // Clear signature when PAN card is replaced
+    if (field === 'panCard') {
+      setFormData(prev => ({
+        ...prev,
+        signature: null
       }));
     }
   };
@@ -137,7 +148,10 @@ export default function UploadPage() {
       
       // Upload PAN card
       if (formData.panCard) {
-        const panResponse = await uploadService.uploadPanCard(formData.panCard);
+        const panResponse = await uploadService.uploadPanCard(
+          formData.panCard, 
+          formData.signature || undefined
+        );
         
         if (panResponse.success) {
           setVerificationStatus(prev => ({
@@ -269,6 +283,25 @@ export default function UploadPage() {
             onFileSelected={handleFileUpload('panCard')}
             error={errors.panCard}
           />
+          
+          {/* Signature Extraction Section */}
+          {formData.panCard && (
+            <div className="mt-6 border-t border-gray-100 pt-4">
+              <h4 className="text-md font-medium text-gray-700 mb-2">Signature Extraction</h4>
+              <p className="text-sm text-gray-500 mb-4">
+                Crop your signature from the PAN card image to complete verification.
+              </p>
+              <SignatureCrop 
+                panImage={formData.panCard}
+                onSignatureExtracted={(signatureFile) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    signature: signatureFile
+                  }));
+                }} 
+              />
+            </div>
+          )}
         </div>
         
         {/* Submit and Verification Section */}

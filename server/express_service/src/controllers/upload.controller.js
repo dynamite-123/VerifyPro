@@ -8,6 +8,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 
+
 export const uploadAadhaarCard = asyncHandler(async (req, res) => {
     const userId = req.user?._id;
     if (!userId) {
@@ -147,11 +148,17 @@ export const uploadPanCard = asyncHandler(async (req, res) => {
         throw new ApiError(401, "Unauthorized request");
     }
 
-    if (!req.file) {
+
+    // Check if PAN card image is uploaded
+    if (!req.files || !req.files.file || !req.files.file[0]) {
+
         throw new ApiError(400, "PAN card image is required");
     }
 
-    const panCardImageLocalPath = req.file?.path;
+    // Check if signature is uploaded
+    const signatureFile = req.files?.signature?.[0];
+
+    const panCardImageLocalPath = req.files.file[0]?.path;
     if (!panCardImageLocalPath) {
         throw new ApiError(400, "PAN card image is required");
     }
@@ -167,7 +174,7 @@ export const uploadPanCard = asyncHandler(async (req, res) => {
         
         formData.append('files', panCardBuffer, {
             filename: path.basename(panCardImageLocalPath),
-            contentType: req.file.mimetype,
+            contentType: req.files.file[0].mimetype,
             knownLength: panCardBuffer.length
         });
 
@@ -223,17 +230,37 @@ export const uploadPanCard = asyncHandler(async (req, res) => {
 
         const panData = extractedData[0];
 
+
+        // Prepare update fields
+        const updateFields = {
+            "panCard.pan_number": panData.pan_number,
+            "panCard.full_name": panData.full_name,
+            "panCard.father_name": panData.father_name,
+            "panCard.date_of_birth": panData.date_of_birth,
+            "panCard.photo_present": panData.photo_present,
+            "panCard.signature_present": panData.signature_present,
+            "panCard.verified": false,
+        };
+
+        // If signature file is provided, upload to cloudinary and store URL
+        if (signatureFile) {
+            try {
+                const cloudinaryResponse = await uploadOnCloudinary(signatureFile.path);
+                
+                if (cloudinaryResponse) {
+                    updateFields["panCard.signature_present"] = true;
+                    updateFields["panCard.signatureUrl"] = cloudinaryResponse.secure_url;
+                }
+            } catch (error) {
+                console.error("Error uploading signature to Cloudinary:", error);
+                // Continue with PAN update even if signature upload fails
+            }
+        }
+
+
         const user = await User.findByIdAndUpdate(
             userId,
-            {
-                "panCard.pan_number": panData.pan_number,
-                "panCard.full_name": panData.full_name,
-                "panCard.father_name": panData.father_name,
-                "panCard.date_of_birth": panData.date_of_birth,
-                "panCard.photo_present": panData.photo_present,
-                "panCard.signature_present": panData.signature_present,
-                "panCard.verified": false,
-            },
+            updateFields,
             { new: true }
         ).select("-password -refreshToken");
 

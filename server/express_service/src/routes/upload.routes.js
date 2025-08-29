@@ -24,7 +24,10 @@ router.post(
 // Route to upload PAN card
 router.post(
     "/pan",
-    upload.single("file"),
+    upload.fields([
+        { name: "file", maxCount: 1 },
+        { name: "signature", maxCount: 1 }
+    ]),
     uploadPanCard
 );
 
