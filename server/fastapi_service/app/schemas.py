@@ -22,3 +22,7 @@ class PANExtractedData(BaseModel):
     signature_present: Optional[bool] = None  # Whether signature is present on card
     photo_present: Optional[bool] = None  # Whether photo is present on card
     permanent_account_number: Optional[str] = None  # Same as pan_number but full text if different
+
+class OTPExtractedData(BaseModel):
+    otp: Optional[str] = None  # The extracted OTP from the image
+    confidence: Optional[float] = None  # Confidence level of the extraction (0-1)

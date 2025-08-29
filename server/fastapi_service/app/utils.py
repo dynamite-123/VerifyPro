@@ -1,6 +1,6 @@
 
 from typing import List, Tuple, Union
-from .schemas import AadhaarExtractedData, PANExtractedData
+from .schemas import AadhaarExtractedData, PANExtractedData, OTPExtractedData
 from pydantic_ai import Agent, BinaryContent
 from pydantic_ai.models.gemini import GeminiModel
 from pydantic_ai.providers.google_gla import GoogleGLAProvider
@@ -103,6 +103,35 @@ class OcrAgent:
             result = await agent.run([
                 'Extract PAN card data: pan_number (format AAAAA9999A), full_name, father_name, date_of_birth, signature_present (boolean), photo_present (boolean), permanent_account_number from each PAN card image.',
                 *binaryimages
+            ])
+            return result.output
+        except Exception as e:
+            if "429" in str(e) or "RATE_LIMIT_EXCEEDED" in str(e):
+                raise APIQuotaExceededException("API quota exceeded. Please wait a few minutes or upgrade your plan.")
+            else:
+                raise e
+
+    async def extract_otp_from_image(self, image_bytes: bytes) -> OTPExtractedData:
+        """Extract OTP from an image containing a user's face and a sheet with OTP written on it."""
+        agent = Agent(
+            model=self.model,
+            output_type=OTPExtractedData,
+            system_prompt=(
+                'Extract the OTP (One-Time Password) from an image. '
+                'The image contains a person\'s face along with a sheet/paper where an OTP is written. '
+                'Look for numerical digits that appear to be an OTP - typically 4-8 digits. '
+                'Focus on any handwritten or printed numbers on papers, signs, or sheets in the image. '
+                'Ignore any numbers that might be part of documents, IDs, or background elements. '
+                'Return the OTP as a string of digits and provide a confidence score (0-1) based on clarity.'
+            )
+        )
+
+        binary_image = BinaryContent(data=image_bytes, media_type='image/png')
+        
+        try:
+            result = await agent.run([
+                'Extract the OTP from this image. The image shows a person with a sheet/paper containing a written OTP. Focus on finding the numerical OTP written on the paper/sheet.',
+                binary_image
             ])
             return result.output
         except Exception as e:
