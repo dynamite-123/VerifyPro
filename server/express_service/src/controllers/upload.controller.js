@@ -6,7 +6,7 @@ import { User } from "../models/User.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { sendOtpToUser } from "../utils/otpUtil.js";
+// OTP sending removed (Nexmo/Vonage) - keep placeholder behaviour without external calls
 import { performKYCChecks } from "./kyc.controller.js";
 
 
@@ -137,20 +137,16 @@ export const uploadAadhaarCard = asyncHandler(async (req, res) => {
             const otpPending = !user.otpVerification || !user.otpVerification.sentAt;
 
             if (hasAadhaar && hasPan && otpPending) {
-                const phone = user.phoneNumber || user.aadhaarCard?.phone_number || '';
-                const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-                const text = `Your VerifyPro OTP is ${otpCode}`;
-
-                const sendResult = await sendOtpToUser(phone, text);
-                if (sendResult.success) {
+                // OTP sending removed: record that OTP is pending and set a sentAt timestamp for UI flow.
+                try {
+                    const phone = user.phoneNumber || user.aadhaarCard?.phone_number || '';
                     await User.findByIdAndUpdate(userId, {
                         'otpVerification.phoneNumber': phone,
                         'otpVerification.status': 'pending',
                         'otpVerification.sentAt': new Date(),
-                        'otpVerification.verificationSid': JSON.stringify(sendResult.data || {}),
                     });
-                } else {
-                    console.error('Failed to send OTP:', sendResult.error || sendResult.raw);
+                } catch (e) {
+                    console.error('Failed to mark OTP pending:', e && e.message);
                 }
             }
 
@@ -307,22 +303,16 @@ export const uploadPanCard = asyncHandler(async (req, res) => {
             const otpPending = !user.otpVerification || !user.otpVerification.sentAt;
 
             if (hasAadhaar && hasPan && otpPending) {
-                const phone = user.phoneNumber || user.aadhaarCard?.phone_number || '';
-                const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-                const text = `Your VerifyPro OTP is ${otpCode}`;
-
-                const sendResult = await sendOtpToUser(phone, text);
-                if (sendResult.success) {
-                    // persist sent OTP meta (do not store code in DB in plaintext in production)
+                // OTP sending removed: record that OTP is pending and set a sentAt timestamp for UI flow.
+                try {
+                    const phone = user.phoneNumber || user.aadhaarCard?.phone_number || '';
                     await User.findByIdAndUpdate(userId, {
                         'otpVerification.phoneNumber': phone,
                         'otpVerification.status': 'pending',
                         'otpVerification.sentAt': new Date(),
-                        // store verificationSid raw response for tracing
-                        'otpVerification.verificationSid': JSON.stringify(sendResult.data || {}),
                     });
-                } else {
-                    console.error('Failed to send OTP:', sendResult.error || sendResult.raw);
+                } catch (e) {
+                    console.error('Failed to mark OTP pending:', e && e.message);
                 }
             }
 
