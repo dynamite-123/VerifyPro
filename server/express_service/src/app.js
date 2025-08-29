@@ -20,10 +20,13 @@ app.use(cookieParser())
 import authRouter from './routes/auth.routes.js'
 import uploadRouter from './routes/upload.routes.js'
 import signatureRouter from './routes/signature.routes.js'
+import otpRouter from './routes/otp.routes.js'
 
 app.use("/api/v1/auth", authRouter)
 app.use("/api/v1/upload", uploadRouter)
+app.use("/api/v1/otp", otpRouter)
 app.use("/api/v1/signature", signatureRouter)
+
 
 // Global error handler - added for better debugging
 app.use((err, req, res, next) => {

@@ -17,6 +17,10 @@ const userSchema = new Schema(
             unique: true,
             trim: true,
         },
+        phoneVerified: {
+            type: Boolean,
+            default: false
+        },
         name: {
             type: String,
             required: true,
@@ -144,6 +148,26 @@ const userSchema = new Schema(
         otpPicture: {
             type: String,
             default: ""
+        },
+        otpVerification: {
+            phoneNumber: {
+                type: String,
+                trim: true
+            },
+            status: {
+                type: String,
+                enum: ['pending', 'verified', 'failed'],
+                default: 'pending'
+            },
+            sentAt: {
+                type: Date
+            },
+            verifiedAt: {
+                type: Date
+            },
+            verificationSid: {
+                type: String
+            }
         },
         },
         {
