@@ -3,11 +3,11 @@ import axios from 'axios';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
 // Create an axios instance with default config
+// Note: don't set a global 'Content-Type' header here because some
+// requests use FormData and require the browser to set the multipart
+// boundary automatically.
 const api = axios.create({
   baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
   withCredentials: true, // Important for cookies
 });
 
@@ -36,6 +36,29 @@ export const authService = {
   refreshToken: async () => {
   const response = await api.post('/auth/refresh-token');
   return response;
+  }
+};
+
+// OTP related API calls
+export const otpService = {
+  sendOtp: async (email: string) => {
+    const response = await api.post('/auth/send-otp', { email });
+    return response;
+  },
+
+  verifyOtpImage: async (email: string, imageFile: File) => {
+    // Convert File to base64 string and send as JSON (avoid multipart)
+    const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+
+    const imageBase64 = await toBase64(imageFile);
+    const payload = { email, imageBase64 };
+    const response = await api.post('/auth/verify-otp-image', payload);
+    return response;
   }
 };
 

@@ -8,6 +8,7 @@ import SignatureCrop from '@/components/upload/signature-crop';
 import StatusBadge from '@/components/ui/status-badge';
 import { uploadService } from '@/services/upload';
 import { useAuth } from '@/contexts/auth-context';
+import { otpService } from '@/services/api';
 
 interface UploadFormData {
   aadhaarFront: File | null;
@@ -177,7 +178,7 @@ export default function UploadPage() {
         }
       }
 
-      // After both uploads succeed, if an extracted signature exists, redirect to compare page
+      // After both uploads succeed, send OTP and then redirect to verify-signature page
       const aadhaarOk = aadhaarResp ? aadhaarResp.success : true; // if not uploaded here, assume previously present
       const panOk = panResp ? panResp.success : true;
 
@@ -187,22 +188,19 @@ export default function UploadPage() {
         (user?.panCard && user.panCard.signature_present)
       );
 
-      if (aadhaarOk && panOk && signaturePresent) {
-        router.push('/upload/verify-signature');
-      }
-      // If both verified and signature exists, redirect to signature compare page
-      if (
-        verificationStatus.aadhaar === 'success' || verificationStatus.aadhaar === 'pending' && user?.aadhaarCard?.aadhaar_number && user?.aadhaarCard?.verified || false
-      ) {
-        // after refreshUser earlier, re-evaluate user from context; if both present redirect
-      }
+      if (aadhaarOk && panOk) {
+        try {
+          // Send OTP to user's email after successful document uploads
+          console.log('User email for OTP:', user?.email);
+          console.log('User object:', user);
+          await otpService.sendOtp(user?.email || '');
+          console.log('OTP sent successfully after document uploads');
+        } catch (otpError) {
+          console.error('Failed to send OTP:', otpError);
+          // Don't block the flow if OTP fails, but log the error
+        }
 
-      // Redirect when both aadhaar and pan verified
-      if (
-        (verificationStatus.aadhaar === 'success' || user?.aadhaarCard?.verified) &&
-        (verificationStatus.pan === 'success' || user?.panCard?.verified)
-      ) {
-        // If signature was extracted and saved, go to compare page
+        // Redirect to verify-signature page for OTP verification and signature comparison
         router.push('/upload/verify-signature');
       }
       

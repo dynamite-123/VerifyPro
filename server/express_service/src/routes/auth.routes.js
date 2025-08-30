@@ -20,9 +20,8 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-const uploadImage = multer();
-
-router.route("/verify-otp-image").post(uploadImage.single("file"), verifyOtpImage);
+// verify-otp-image will accept JSON with an imageBase64 field
+router.route("/verify-otp-image").post(verifyOtpImage);
 router.route("/risk-score/:userId").get(getRiskScore);
 router.route("/send-otp").post(sendOtp);
 
